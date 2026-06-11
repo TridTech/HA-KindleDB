@@ -91,26 +91,9 @@ class KindleDashboardPanel extends HTMLElement {
           </div>
         </div>
 
-        <div class="card" id="card-general">
-          <div class="card-header"><span class="icon">⚙️</span> General</div>
+        <div class="card">
+          <div class="card-header"><span class="icon">📐</span> Page Dimensions</div>
           <div class="card-body">
-            <div class="form-row">
-              <label>Location Name</label>
-              <input type="text" id="location-name" placeholder="Home">
-            </div>
-            <div class="form-row two-col">
-              <div>
-                <label>Font</label>
-                <select id="font-select"></select>
-              </div>
-              <div>
-                <label>Sensor Units</label>
-                <label class="opt-row">
-                  <input type="checkbox" id="inline-units">
-                  <span>Inline <em>(22 °F)</em></span>
-                </label>
-              </div>
-            </div>
             <div class="form-row two-col">
               <div>
                 <label>Page Width</label>
@@ -126,6 +109,20 @@ class KindleDashboardPanel extends HTMLElement {
                   <span class="num-unit">px</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="card-general">
+          <div class="card-header"><span class="icon">⚙️</span> General</div>
+          <div class="card-body">
+            <div class="form-row">
+              <label>Location Name</label>
+              <input type="text" id="location-name" placeholder="Home">
+            </div>
+            <div class="form-row">
+              <label>Font</label>
+              <select id="font-select"></select>
             </div>
             <div class="form-row three-col">
               <div>
@@ -200,7 +197,7 @@ class KindleDashboardPanel extends HTMLElement {
 
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
-    root.querySelector("#inline-units").checked     = !!cfg.inline_units;
+    // inline-units synced via _paintSections (in sensors sec header)
     root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
     root.querySelector("#page-height").value        = cfg.page_height ?? 800;
     root.querySelector("#label-font-size").value    = cfg.label_font_size  ?? 13;
@@ -239,6 +236,10 @@ class KindleDashboardPanel extends HTMLElement {
             ? `<label class="two-col-wrap" title="Two-column layout on Kindle">
                  <input type="checkbox" class="sec-twocol"${twoCol?" checked":""}> 2 Columns
                </label>` : ""}
+          ${sec.type === "sensors"
+            ? `<label class="two-col-wrap" title="Show units on the same line as the value">
+                 <input type="checkbox" class="sec-inlineunits"${this._config && this._config.inline_units?" checked":""}> Inline Units
+               </label>` : ""}
           <label class="two-col-wrap" title="Hide entity IDs in this section">
             <input type="checkbox" class="sec-hideids"${sec.hide_entity_ids?" checked":""}> Hide IDs
           </label>
@@ -248,7 +249,7 @@ class KindleDashboardPanel extends HTMLElement {
             <button class="btn-del-sec">🗑</button>
           </div>
         </div>
-        <div class="sec-items${twoCol?" two-col-items":""}">
+        <div class="sec-items">
           ${items.map((item, ii) => this._itemHTML(sec.type, item, si, ii)).join("")}
         </div>
         <button class="btn-add-item add-item-btn">${addLabel}</button>
@@ -358,7 +359,9 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.location_name    = root.querySelector("#location-name")?.value.trim() || "Home";
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
-    cfg.inline_units     = root.querySelector("#inline-units")?.checked        || false;
+    // inline_units is read from the first sensors section header
+    const inlineEl = root.querySelector(".sec-inlineunits");
+    cfg.inline_units = inlineEl ? inlineEl.checked : (this._config?.inline_units || false);
     cfg.page_width       = parseInt(root.querySelector("#page-width")?.value)  || 600;
     cfg.page_height      = parseInt(root.querySelector("#page-height")?.value) || 800;
     cfg.label_font_size  = parseInt(root.querySelector("#label-font-size")?.value)  || 13;
@@ -566,21 +569,14 @@ class KindleDashboardPanel extends HTMLElement {
     .btn-del-sec{color:var(--error-color,#db4437)}
     /* items */
     .sec-items{display:flex;flex-direction:column;gap:6px;padding:8px 10px}
-    .sec-items.two-col-items{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-    .item-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+    .item-row{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;
       background:var(--primary-background-color,#fff);
       border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:5px 7px}
-    /* in single-col view, prevent wrapping */
-    .sec-items:not(.two-col-items) .item-row{flex-wrap:nowrap}
     /* item-row input sizing handled above */
     .i-icon-sel{flex:0 0 110px!important;min-width:0;font-size:11px}
-    .i-wide{flex:2 1 100px;min-width:0}
-    .i-mid{flex:1 1 60px;min-width:0}
+    .i-wide{flex:2 1 120px;min-width:0}
+    .i-mid{flex:1 1 80px;min-width:0}
     .i-unit{width:46px!important;flex-shrink:0}
-    /* in 2-col cells: make flex items fill full row width */
-    .two-col-items .i-wide{flex:1 1 100%;min-width:0}
-    .two-col-items .i-mid{flex:1 1 100%;min-width:0}
-    .two-col-items .i-icon-sel{flex:1 1 100%!important}
     .hide-wrap{display:flex;align-items:center;gap:3px;font-size:11px;
       color:var(--secondary-text-color);white-space:nowrap;cursor:pointer;
       text-transform:none;letter-spacing:0;font-weight:400;margin-bottom:0;flex-shrink:0}

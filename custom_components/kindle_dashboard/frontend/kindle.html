@@ -143,8 +143,8 @@
     border-bottom: 1px solid #ddd;
   }
   .toggles-grid .toggle-row { min-height: 48px; }
-  .toggles-grid .toggle-label { font-size: 11px; }
-  .toggles-grid .toggle-label small { font-size: 9px; }
+  /* toggle-label font in grid inherits --label-fs from body vars */
+  .toggles-grid .toggle-label small { font-size: var(--sub-fs, 9px); }
   .toggle-row {
     border: 2px solid #000; display: flex; align-items: center;
     min-height: 52px; cursor: pointer;
