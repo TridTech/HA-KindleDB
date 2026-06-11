@@ -283,13 +283,13 @@
 
 <script>
 /* ── AUTH ──────────────────────────────────────────────────── */
-// When served from HA (/api/...) we use cookie-based auth so no token needed.
-// When pointing a raw Kindle at the server we use whatever token was injected.
+// HA_TOKEN is injected server-side from the ?token= URL parameter.
+// Every API call sends it as a Bearer header — no session cookie needed.
 function apiHeaders() {
-  const h = { "Content-Type": "application/json" };
-  if (typeof USE_HA_AUTH !== "undefined" && USE_HA_AUTH) return h; // cookie auth
-  if (HA_TOKEN) h["Authorization"] = "Bearer " + HA_TOKEN;
-  return h;
+  return {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + HA_TOKEN,
+  };
 }
 
 /* ── STATE ─────────────────────────────────────────────────── */

@@ -67,7 +67,7 @@ async def ws_save_config(
         return
 
     new_config = msg["config"]
-    allowed_keys = {CONF_LOCATION_NAME, CONF_SCENES, CONF_TOGGLES, CONF_STATS}
+    allowed_keys = {CONF_LOCATION_NAME, CONF_SCENES, CONF_TOGGLES, CONF_STATS, "kindle_token"}
     filtered = {k: v for k, v in new_config.items() if k in allowed_keys}
 
     hass.config_entries.async_update_entry(entry, options={**entry.options, **filtered})

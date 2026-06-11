@@ -95,45 +95,89 @@ def _merged_config(entry: ConfigEntry) -> dict:
 
 
 class KindleView(HomeAssistantView):
-    """Serve the Kindle dashboard HTML at /api/kindle_dashboard/kindle."""
+    """Serve the Kindle dashboard HTML at /api/kindle_dashboard/kindle.
+
+    Authentication: the Kindle browser does not reliably maintain session
+    cookies, so we use a long-lived token passed as ``?token=<TOKEN>`` in
+    the URL.  The token is injected into the page and used as a Bearer header
+    on every subsequent API call.  The page itself is served without auth so
+    the HTML can load; every state/service call uses the injected token.
+
+    If no token is provided we return a friendly error page with instructions
+    instead of a silent 401.
+    """
 
     url = "/api/kindle_dashboard/kindle"
     name = "api:kindle_dashboard:kindle"
-    requires_auth = False  # Kindle browser won't have a session cookie
+    requires_auth = False  # HTML is public; individual API calls use the token
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Init."""
         self.hass = hass
 
     async def get(self, request: Any) -> Any:
-        """Return the Kindle HTML page with config injected."""
+        """Return the Kindle HTML page with config and token injected."""
         from aiohttp.web import Response
+
+        token = request.rel_url.query.get("token", "").strip()
+
+        if not token:
+            return Response(
+                text=_NO_TOKEN_PAGE,
+                content_type="text/html",
+                charset="utf-8",
+            )
 
         entries = self.hass.config_entries.async_entries(DOMAIN)
         if not entries:
-            return Response(text="Integration not set up", status=503)
+            return Response(text="Kindle Dashboard integration is not set up.", status=503)
 
-        cfg = _merged_config(entries[0])
-        location     = cfg.get(CONF_LOCATION_NAME, DEFAULT_LOCATION_NAME)
-        scenes       = cfg.get(CONF_SCENES, DEFAULT_SCENES)
-        toggles      = cfg.get(CONF_TOGGLES, DEFAULT_TOGGLES)
-        stats        = cfg.get(CONF_STATS, DEFAULT_STATS)
+        cfg     = _merged_config(entries[0])
+        location = cfg.get(CONF_LOCATION_NAME, DEFAULT_LOCATION_NAME)
+        scenes   = cfg.get(CONF_SCENES,  DEFAULT_SCENES)
+        toggles  = cfg.get(CONF_TOGGLES, DEFAULT_TOGGLES)
+        stats    = cfg.get(CONF_STATS,   DEFAULT_STATS)
 
-        # Read the template HTML and inject config as JS
         template_path = os.path.join(os.path.dirname(__file__), "frontend", "kindle.html")
         with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
-        # Replace the placeholder config block
         injected = (
-            f"const HA_URL = window.location.origin;\n"
-            f"const HA_TOKEN = '';\n"
-            f"const USE_HA_AUTH = true;\n"
-            f"const LOCATION = {json.dumps(location)};\n"
-            f"const SCENES  = {json.dumps(scenes)};\n"
-            f"const TOGGLES = {json.dumps(toggles)};\n"
-            f"const STATS   = {json.dumps(stats)};\n"
+            f"const HA_URL    = window.location.origin;\n"
+            f"const HA_TOKEN  = {json.dumps(token)};\n"
+            f"const LOCATION  = {json.dumps(location)};\n"
+            f"const SCENES    = {json.dumps(scenes)};\n"
+            f"const TOGGLES   = {json.dumps(toggles)};\n"
+            f"const STATS     = {json.dumps(stats)};\n"
         )
         html = html.replace("/* __INJECTED_CONFIG__ */", injected)
 
         return Response(text=html, content_type="text/html", charset="utf-8")
+
+
+_NO_TOKEN_PAGE = """<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=600,initial-scale=1">
+<title>Kindle Dashboard — Setup</title>
+<style>
+  body{font-family:'Courier New',monospace;background:#fff;color:#000;
+       padding:24px;width:600px;line-height:1.6}
+  h1{font-size:18px;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:16px}
+  ol{padding-left:20px} li{margin-bottom:10px}
+  code{background:#eee;padding:2px 6px;font-size:13px;word-break:break-all}
+  .box{border:2px solid #000;padding:12px;margin-top:16px;font-size:13px}
+</style></head><body>
+<h1>Kindle Dashboard — token required</h1>
+<p>A long-lived access token must be included in the URL so the dashboard
+can control your devices without a login session.</p>
+<ol>
+  <li>In Home Assistant, click your profile (bottom-left avatar).</li>
+  <li>Scroll to <strong>Long-Lived Access Tokens</strong> and click
+      <strong>Create Token</strong>. Name it <em>Kindle</em>.</li>
+  <li>Copy the token and bookmark this URL on your Kindle:<br><br>
+      <code>http://&lt;HA-IP&gt;:8123/api/kindle_dashboard/kindle?token=PASTE_TOKEN_HERE</code>
+  </li>
+</ol>
+<div class="box">The Kindle Dashboard config panel in the HA sidebar also
+shows a pre-filled URL once a token is saved there.</div>
+</body></html>"""

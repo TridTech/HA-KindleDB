@@ -294,14 +294,30 @@ class KindleDashboardPanel extends HTMLElement {
         <div class="card">
           <div class="card-header"><span class="icon">🔗</span> Kindle URL</div>
           <div class="card-body">
-            <p style="margin-bottom:8px;color:var(--secondary-text-color);">
-              Point your Kindle browser to this address. It refreshes every 60 seconds automatically.
+            <p style="margin-bottom:10px;color:var(--secondary-text-color)">
+              The Kindle browser doesn't keep login sessions, so the URL includes
+              a long-lived access token. Generate one in your
+              <strong>HA profile → Long-Lived Access Tokens</strong>, paste it
+              below, then bookmark the resulting URL on your Kindle.
             </p>
-            <div class="kindle-url">
-              <a id="kindle-url-link" href="/api/kindle_dashboard/kindle" target="_blank">
-                ${window.location.origin}/api/kindle_dashboard/kindle
-              </a>
+            <div class="form-row">
+              <label>Long-Lived Access Token</label>
+              <input type="text" id="kindle-token" placeholder="Paste token here…"
+                     value="${this._esc(cfg.kindle_token || '')}"
+                     style="font-family:monospace;font-size:12px">
             </div>
+            <div class="form-row">
+              <label>Kindle Bookmark URL</label>
+              <div class="kindle-url" id="kindle-url-display">
+                ${cfg.kindle_token
+                  ? `<a href="/api/kindle_dashboard/kindle?token=${encodeURIComponent(cfg.kindle_token)}" target="_blank">${window.location.origin}/api/kindle_dashboard/kindle?token=${this._esc(cfg.kindle_token)}</a>`
+                  : '<span style="color:#999">Paste a token above and save to generate the URL</span>'
+                }
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--secondary-text-color);margin-top:4px">
+              The token is stored in your HA config entry (not sent to any external service).
+            </p>
           </div>
         </div>
 
@@ -443,6 +459,7 @@ class KindleDashboardPanel extends HTMLElement {
     const root = this.shadowRoot;
 
     const location = root.querySelector("#location-name").value.trim() || "Home";
+    const kindle_token = (root.querySelector("#kindle-token")?.value || "").trim();
 
     const stats = [...root.querySelectorAll(".item-row[data-type='stat']")].map(row => {
       const i = row.dataset.index;
@@ -481,7 +498,7 @@ class KindleDashboardPanel extends HTMLElement {
       };
     }).filter(t => t.id);
 
-    return { location_name: location, scenes, toggles, stats };
+    return { location_name: location, kindle_token, scenes, toggles, stats };
   }
 
   // ── ADD / DELETE ─────────────────────────────────────────────────────────
