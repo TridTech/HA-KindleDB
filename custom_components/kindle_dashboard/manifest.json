@@ -1,0 +1,13 @@
+{
+  "domain": "kindle_dashboard",
+  "name": "Kindle Dashboard",
+  "version": "1.0.0",
+  "documentation": "https://github.com/YOUR_USERNAME/kindle-dashboard",
+  "issue_tracker": "https://github.com/YOUR_USERNAME/kindle-dashboard/issues",
+  "codeowners": ["@YOUR_USERNAME"],
+  "requirements": [],
+  "dependencies": ["http", "frontend"],
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "local_push"
+}
