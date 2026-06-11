@@ -126,6 +126,14 @@
     padding: 10px 12px;
     border-bottom: 1px solid #ddd;
   }
+  .toggles-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+  }
+  .toggles-grid .toggle-row { min-height: 48px; }
+  .toggles-grid .toggle-label { font-size: 11px; }
+  .toggles-grid .toggle-label small { font-size: 9px; }
   .toggle-row {
     border: 2px solid #000; display: flex; align-items: center;
     min-height: 52px; cursor: pointer;
@@ -384,7 +392,7 @@ function buildScenesSection(wrap, sec, si) {
 
 function buildTogglesSection(wrap, sec, si) {
   const list = document.createElement("div");
-  list.className = "toggles-list";
+  list.className = sec.two_columns ? "toggles-grid" : "toggles-list";
 
   (sec.items || []).forEach((item, ii) => {
     const row = document.createElement("div");
