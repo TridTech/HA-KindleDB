@@ -218,9 +218,9 @@ class KindleDashboardPanel extends HTMLElement {
     root.querySelector("#label-font-size").value    = cfg.label_font_size  ?? 13;
     root.querySelector("#sub-font-size").value      = cfg.sub_font_size    ?? 10;
     root.querySelector("#value-font-size").value    = cfg.value_font_size  ?? 18;
-    _setBIU(root, "label",   !!cfg.label_bold,   !!cfg.label_italic,   !!cfg.label_underline);
-    _setBIU(root, "sub",     !!cfg.sub_bold,     !!cfg.sub_italic,     !!cfg.sub_underline);
-    _setBIU(root, "value",   !!cfg.value_bold,   !!cfg.value_italic,   !!cfg.value_underline);
+    this._setBIU(root, "label",   !!cfg.label_bold,   !!cfg.label_italic,   !!cfg.label_underline);
+    this._setBIU(root, "sub",     !!cfg.sub_bold,     !!cfg.sub_italic,     !!cfg.sub_underline);
+    this._setBIU(root, "value",   !!cfg.value_bold,   !!cfg.value_italic,   !!cfg.value_underline);
 
 
     // Font select — build options with per-option font styling
