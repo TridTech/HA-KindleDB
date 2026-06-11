@@ -6,241 +6,101 @@
 <title>Home</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
-    background: #fff;
-    color: #000;
+    background: #fff; color: #000;
     font-family: Georgia, serif;
-    width: 600px;
-    min-height: 800px;
-    overflow-x: hidden;
-    -webkit-text-size-adjust: 100%;
+    width: 600px; min-height: 800px;
+    overflow-x: hidden; -webkit-text-size-adjust: 100%;
   }
-
-  /* ── STATUS BAR ─────────────────────────── */
   #status-bar {
-    background: #000;
-    color: #fff;
+    background: #000; color: #fff;
     padding: 10px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    letter-spacing: .04em;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: .04em;
   }
   #status-bar .loc { font-size: 15px; font-weight: bold; letter-spacing: .08em; }
   #status-bar .right { text-align: right; line-height: 1.5; }
-
-  /* ── TOP STATUS PANEL ──────────────────── */
-  #status-panel {
-    border-bottom: 3px solid #000;
-    padding: 16px;
-  }
-  .status-grid {
-    display: grid;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .stat-tile {
-    border: 2px solid #000;
-    padding: 10px 8px 8px;
-    text-align: center;
-  }
+  #status-panel { border-bottom: 3px solid #000; padding: 16px; }
+  .status-grid { display: grid; gap: 10px; margin-bottom: 14px; }
+  .stat-tile { border: 2px solid #000; padding: 10px 8px 8px; text-align: center; }
   .stat-tile .label {
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: #555;
-    margin-bottom: 4px;
+    font-family: 'Courier New', monospace; font-size: 10px;
+    letter-spacing: .12em; text-transform: uppercase; color: #555; margin-bottom: 4px;
   }
   .stat-tile .value {
-    font-size: 22px;
-    font-weight: bold;
-    line-height: 1;
-    font-family: 'Courier New', monospace;
+    font-size: 22px; font-weight: bold; line-height: 1; font-family: 'Courier New', monospace;
   }
-  .stat-tile .unit {
-    font-size: 11px;
-    color: #444;
-    margin-top: 2px;
-    font-family: 'Courier New', monospace;
-  }
-
-  /* ── LIGHTS SUMMARY ────────────────────── */
+  .stat-tile .unit { font-size: 11px; color: #444; margin-top: 2px; font-family: 'Courier New', monospace; }
   #lights-summary {
-    border: 2px solid #000;
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: #f5f5f5;
+    border: 2px solid #000; padding: 10px 14px;
+    display: flex; align-items: center; gap: 12px; background: #f5f5f5;
   }
   #lights-summary .dot-row { display: flex; gap: 6px; flex-wrap: wrap; }
   .light-dot {
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    border: 2px solid #000;
-    background: #fff;
-    display: inline-block;
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #000; background: #fff; display: inline-block;
   }
   .light-dot.on { background: #000; }
-  #lights-summary .summary-text {
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    flex: 1;
-  }
+  #lights-summary .summary-text { font-family: 'Courier New', monospace; font-size: 12px; flex: 1; }
   #lights-summary .summary-text strong { font-size: 15px; display: block; }
-
-  /* ── SECTION LABEL ─────────────────────── */
   .section-label {
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: .18em;
-    text-transform: uppercase;
-    padding: 8px 16px 6px;
-    background: #eee;
-    border-bottom: 1px solid #bbb;
-    color: #444;
+    font-family: 'Courier New', monospace; font-size: 10px;
+    letter-spacing: .18em; text-transform: uppercase;
+    padding: 8px 16px 6px; background: #eee;
+    border-bottom: 1px solid #bbb; color: #444;
   }
-
-  /* ── SCENE BUTTONS ─────────────────────── */
   #scenes {
-    padding: 14px 16px;
-    display: grid;
-    gap: 10px;
-    border-bottom: 2px solid #000;
+    padding: 14px 16px; display: grid; gap: 10px; border-bottom: 2px solid #000;
   }
   .scene-btn {
-    border: 2px solid #000;
-    background: #fff;
-    padding: 0;
-    cursor: pointer;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    min-height: 72px;
-    overflow: hidden;
-    -webkit-tap-highlight-color: transparent;
+    border: 2px solid #000; background: #fff; padding: 0; cursor: pointer;
+    text-align: left; display: flex; flex-direction: column; min-height: 72px;
+    overflow: hidden; -webkit-tap-highlight-color: transparent;
   }
-  .scene-btn:active, .scene-btn.active-scene {
-    background: #000; color: #fff;
-  }
-  .scene-btn:active .scene-icon, .scene-btn.active-scene .scene-icon {
-    background: #222; color: #fff;
-  }
-  .scene-btn:active .scene-desc, .scene-btn.active-scene .scene-desc { color: #aaa; }
-  .scene-icon {
-    background: #eee;
-    width: 100%;
-    padding: 10px 12px 6px;
-    font-size: 20px;
-    line-height: 1;
-  }
+  .scene-btn:active, .scene-btn.active-scene { background: #000; color: #fff; }
+  .scene-btn:active .scene-icon-bg, .scene-btn.active-scene .scene-icon-bg { background: #222; color: #fff; }
+  .scene-btn:active .scene-desc,    .scene-btn.active-scene .scene-desc    { color: #aaa; }
+  .scene-icon-bg { background: #eee; width: 100%; padding: 10px 12px 6px; font-size: 20px; line-height: 1; }
   .scene-body { padding: 6px 12px 10px; }
-  .scene-name {
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    font-weight: bold;
-    letter-spacing: .04em;
-    display: block;
-  }
-  .scene-desc {
-    font-size: 10px;
-    color: #666;
-    font-family: 'Courier New', monospace;
-    display: block;
-    margin-top: 2px;
-  }
-
-  /* ── INDIVIDUAL TOGGLES ────────────────── */
-  #toggles {
-    padding: 14px 16px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .scene-name { font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; letter-spacing: .04em; display: block; }
+  .scene-desc { font-size: 10px; color: #666; font-family: 'Courier New', monospace; display: block; margin-top: 2px; }
+  #toggles { padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 8px; }
   .toggle-row {
-    border: 2px solid #000;
-    display: flex;
-    align-items: center;
-    min-height: 52px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    background: #fff;
+    border: 2px solid #000; display: flex; align-items: center;
+    min-height: 52px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; background: #fff;
   }
   .toggle-row:active { background: #e0e0e0; }
   .toggle-icon {
-    width: 50px; min-height: 52px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-    background: #f0f0f0;
-    border-right: 2px solid #000;
-    flex-shrink: 0;
+    width: 50px; min-height: 52px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; background: #f0f0f0; border-right: 2px solid #000; flex-shrink: 0;
   }
-  .toggle-label {
-    flex: 1;
-    padding: 0 12px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    letter-spacing: .04em;
-  }
-  .toggle-label small {
-    display: block; font-size: 10px; color: #666;
-    margin-top: 2px; letter-spacing: .06em;
-  }
+  .toggle-label { flex: 1; padding: 0 12px; font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: .04em; }
+  .toggle-label small { display: block; font-size: 10px; color: #666; margin-top: 2px; letter-spacing: .06em; }
   .toggle-switch {
-    width: 56px; height: 28px;
-    border: 2px solid #000;
-    margin-right: 14px;
-    background: #fff;
-    position: relative;
-    flex-shrink: 0;
+    width: 56px; height: 28px; border: 2px solid #000;
+    margin-right: 14px; background: #fff; position: relative; flex-shrink: 0;
   }
   .toggle-switch::after {
-    content: '';
-    position: absolute;
-    top: 2px; left: 2px;
-    width: 20px; height: 20px;
-    background: #888;
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; background: #888;
   }
   .toggle-row.on .toggle-switch { background: #000; }
   .toggle-row.on .toggle-switch::after { left: calc(100% - 22px); background: #fff; }
-
-  /* ── FOOTER ────────────────────────────── */
   #footer {
-    border-top: 2px solid #000;
-    padding: 8px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    color: #666;
-    letter-spacing: .06em;
+    border-top: 2px solid #000; padding: 8px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: .06em;
   }
   #refresh-btn {
-    border: 1px solid #999;
-    background: #fff;
-    padding: 4px 10px;
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    letter-spacing: .06em;
-    cursor: pointer;
+    border: 1px solid #999; background: #fff; padding: 4px 10px;
+    font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: .06em; cursor: pointer;
   }
   #refresh-btn:active { background: #000; color: #fff; }
-
   #toast {
-    position: fixed;
-    bottom: 48px; left: 50%;
-    transform: translateX(-50%);
-    background: #000; color: #fff;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    padding: 8px 18px;
-    display: none;
-    white-space: nowrap;
+    position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
+    background: #000; color: #fff; font-family: 'Courier New', monospace;
+    font-size: 12px; padding: 8px 18px; display: none; white-space: nowrap;
   }
 </style>
 </head>
@@ -259,7 +119,7 @@
 </div>
 
 <div id="status-panel">
-  <div class="status-grid" id="stat-grid"><!-- built by JS --></div>
+  <div class="status-grid" id="stat-grid"></div>
   <div id="lights-summary">
     <div class="dot-row" id="light-dots"></div>
     <div class="summary-text">
@@ -269,10 +129,13 @@
   </div>
 </div>
 
-<div class="section-label">Scenes</div>
-<div id="scenes"></div>
+<!-- Scenes section — hidden if SHOW_SCENES is false -->
+<div id="scenes-section" style="display:none">
+  <div class="section-label" id="scenes-section-label">Scenes</div>
+  <div id="scenes"></div>
+</div>
 
-<div class="section-label">Lights &amp; Switches</div>
+<div class="section-label" id="toggles-section-label">Lights &amp; Switches</div>
 <div id="toggles"></div>
 
 <div id="footer">
@@ -283,8 +146,6 @@
 
 <script>
 /* ── AUTH ──────────────────────────────────────────────────── */
-// HA_TOKEN is injected server-side from the ?token= URL parameter.
-// Every API call sends it as a Bearer header — no session cookie needed.
 function apiHeaders() {
   return {
     "Content-Type": "application/json",
@@ -299,8 +160,7 @@ let entityStates = {};
 async function callService(domain, service, entityId) {
   try {
     const r = await fetch(`${HA_URL}/api/services/${domain}/${service}`, {
-      method: "POST",
-      headers: apiHeaders(),
+      method: "POST", headers: apiHeaders(),
       body: JSON.stringify({ entity_id: entityId }),
     });
     if (r.ok) { toast("Done"); setTimeout(fetchAll, 1200); }
@@ -317,10 +177,7 @@ async function fetchState(entityId) {
 
 async function fetchAll() {
   document.getElementById("conn-status").textContent = "loading…";
-  const allIds = [
-    ...STATS.map(s => s.id),
-    ...TOGGLES.map(t => t.id),
-  ];
+  const allIds = [...STATS.map(s => s.id), ...TOGGLES.map(t => t.id)];
   const results = await Promise.all(allIds.map(fetchState));
   let anyFail = false;
   results.forEach((d, i) => {
@@ -335,11 +192,10 @@ async function fetchAll() {
     "Updated: " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-/* ── RENDER HELPERS ────────────────────────────────────────── */
+/* ── RENDER ────────────────────────────────────────────────── */
 function renderStats() {
   const grid = document.getElementById("stat-grid");
   if (!grid._built) {
-    // Build tiles once
     grid.style.gridTemplateColumns = `repeat(${Math.min(STATS.length, 3)}, 1fr)`;
     grid.innerHTML = STATS.map((s, i) => `
       <div class="stat-tile">
@@ -366,11 +222,12 @@ function renderToggles() {
 }
 
 function renderLightDots() {
-  const lightToggles = TOGGLES.filter(t => t.id.startsWith("light."));
+  // Only lights that are NOT excluded from status
+  const statusLights = TOGGLES.filter(t => t.id.startsWith("light.") && !t.hide_from_status);
   const container = document.getElementById("light-dots");
   container.innerHTML = "";
   let onCount = 0, onNames = [];
-  lightToggles.forEach(t => {
+  statusLights.forEach(t => {
     const d = entityStates[t.id];
     const isOn = !!(d && d.state === "on");
     if (isOn) { onCount++; onNames.push(t.label); }
@@ -387,15 +244,21 @@ function renderLightDots() {
 
 /* ── BUILD UI ──────────────────────────────────────────────── */
 function buildScenes() {
+  const section = document.getElementById("scenes-section");
+  if (!SHOW_SCENES || !SCENES.length) { section.style.display = "none"; return; }
+  section.style.display = "block";
+
+  document.getElementById("scenes-section-label").textContent =
+    (typeof SECTION_SCENES_LABEL !== "undefined" && SECTION_SCENES_LABEL) || "Scenes";
+
   const container = document.getElementById("scenes");
-  // Responsive grid: 2 cols if ≥ 2 scenes
   container.style.gridTemplateColumns = SCENES.length >= 2 ? "1fr 1fr" : "1fr";
   SCENES.forEach(s => {
     const btn = document.createElement("button");
     btn.className = "scene-btn";
     btn.id = "sc-" + s.id;
     btn.innerHTML = `
-      <div class="scene-icon">${s.icon || "🎭"}</div>
+      <div class="scene-icon-bg">${s.icon || "🎭"}</div>
       <div class="scene-body">
         <span class="scene-name">${s.name}</span>
         <span class="scene-desc">${s.desc || ""}</span>
@@ -411,12 +274,14 @@ function buildScenes() {
 }
 
 function buildToggles() {
+  document.getElementById("toggles-section-label").textContent =
+    (typeof SECTION_TOGGLES_LABEL !== "undefined" && SECTION_TOGGLES_LABEL) || "Lights & Switches";
+
   const container = document.getElementById("toggles");
   TOGGLES.forEach(t => {
-    const safeId = t.id.replace(/\./g, "_");
     const row = document.createElement("div");
     row.className = "toggle-row";
-    row.id = "tog-" + safeId;
+    row.id = "tog-" + t.id.replace(/\./g, "_");
     row.innerHTML = `
       <div class="toggle-icon">${t.icon || "💡"}</div>
       <div class="toggle-label">
@@ -448,7 +313,9 @@ function toast(msg) {
 }
 
 /* ── BOOT ──────────────────────────────────────────────────── */
-document.getElementById("loc-name").textContent = (typeof LOCATION !== "undefined" ? LOCATION : "HOME").toUpperCase();
+document.getElementById("loc-name").textContent =
+  (typeof LOCATION !== "undefined" ? LOCATION : "HOME").toUpperCase();
+
 buildScenes();
 buildToggles();
 updateClock();

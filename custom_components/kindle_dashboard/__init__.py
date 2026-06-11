@@ -14,10 +14,16 @@ from homeassistant.core import HomeAssistant
 from .const import (
     CONF_LOCATION_NAME,
     CONF_SCENES,
+    CONF_SECTION_SCENES_LABEL,
+    CONF_SECTION_TOGGLES_LABEL,
+    CONF_SHOW_SCENES,
     CONF_STATS,
     CONF_TOGGLES,
     DEFAULT_LOCATION_NAME,
     DEFAULT_SCENES,
+    DEFAULT_SECTION_SCENES_LABEL,
+    DEFAULT_SECTION_TOGGLES_LABEL,
+    DEFAULT_SHOW_SCENES,
     DEFAULT_STATS,
     DEFAULT_TOGGLES,
     DOMAIN,
@@ -132,23 +138,29 @@ class KindleView(HomeAssistantView):
         if not entries:
             return Response(text="Kindle Dashboard integration is not set up.", status=503)
 
-        cfg     = _merged_config(entries[0])
-        location = cfg.get(CONF_LOCATION_NAME, DEFAULT_LOCATION_NAME)
-        scenes   = cfg.get(CONF_SCENES,  DEFAULT_SCENES)
-        toggles  = cfg.get(CONF_TOGGLES, DEFAULT_TOGGLES)
-        stats    = cfg.get(CONF_STATS,   DEFAULT_STATS)
+        cfg          = _merged_config(entries[0])
+        location     = cfg.get(CONF_LOCATION_NAME, DEFAULT_LOCATION_NAME)
+        scenes       = cfg.get(CONF_SCENES,  DEFAULT_SCENES)
+        toggles      = cfg.get(CONF_TOGGLES, DEFAULT_TOGGLES)
+        stats        = cfg.get(CONF_STATS,   DEFAULT_STATS)
+        show_scenes  = cfg.get(CONF_SHOW_SCENES, DEFAULT_SHOW_SCENES)
+        scenes_label = cfg.get(CONF_SECTION_SCENES_LABEL,  DEFAULT_SECTION_SCENES_LABEL)
+        toggles_label= cfg.get(CONF_SECTION_TOGGLES_LABEL, DEFAULT_SECTION_TOGGLES_LABEL)
 
         template_path = os.path.join(os.path.dirname(__file__), "frontend", "kindle.html")
         with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
         injected = (
-            f"const HA_URL    = window.location.origin;\n"
-            f"const HA_TOKEN  = {json.dumps(token)};\n"
-            f"const LOCATION  = {json.dumps(location)};\n"
-            f"const SCENES    = {json.dumps(scenes)};\n"
-            f"const TOGGLES   = {json.dumps(toggles)};\n"
-            f"const STATS     = {json.dumps(stats)};\n"
+            f"const HA_URL                = window.location.origin;\n"
+            f"const HA_TOKEN              = {json.dumps(token)};\n"
+            f"const LOCATION              = {json.dumps(location)};\n"
+            f"const SHOW_SCENES           = {json.dumps(show_scenes)};\n"
+            f"const SECTION_SCENES_LABEL  = {json.dumps(scenes_label)};\n"
+            f"const SECTION_TOGGLES_LABEL = {json.dumps(toggles_label)};\n"
+            f"const SCENES                = {json.dumps(scenes)};\n"
+            f"const TOGGLES               = {json.dumps(toggles)};\n"
+            f"const STATS                 = {json.dumps(stats)};\n"
         )
         html = html.replace("/* __INJECTED_CONFIG__ */", injected)
 
