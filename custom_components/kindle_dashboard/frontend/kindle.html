@@ -5,6 +5,21 @@
 <meta name="viewport" content="/* __VIEWPORT_WIDTH__ */">
 <title>Home</title>
 <style>
+  @font-face {
+    font-family: 'MDI';
+    src: url('/kindle_dashboard_files/mdi-kindle.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+  }
+  .mdi {
+    font-family: 'MDI' !important;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    display: inline-block;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -381,7 +396,7 @@ function buildScenesSection(wrap, sec, si) {
     btn.className = "scene-btn";
     btn.id = `scene-${si}-${ii}`;
     btn.innerHTML = `
-      <div class="scene-icon-bg">${item.icon || "🎭"}</div>
+      <div class="scene-icon-bg"><span class="mdi">${item.icon || "\uF0493"}</span></div>
       <div class="scene-body">
         <span class="scene-name">${item.name || item.id}</span>
         <span class="scene-desc">${item.desc || ""}</span>
@@ -405,7 +420,7 @@ function buildTogglesSection(wrap, sec, si) {
     row.className = "toggle-row";
     row.id = `toggle-${si}-${ii}`;
     row.innerHTML = `
-      <div class="toggle-icon">${item.icon || "💡"}</div>
+      <div class="toggle-icon"><span class="mdi">${item.icon || "\uF0335"}</span></div>
       <div class="toggle-label">
         ${item.label || item.id}
         ${sec.hide_entity_ids ? "" : `<small>${item.id}</small>`}
