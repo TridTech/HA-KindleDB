@@ -176,7 +176,7 @@ class KindleDashboardPanel extends HTMLElement {
                    :                          "+ Add Toggle";
 
     return `
-      <div class="section-card" data-si="${si}">
+      <div class="section-card" data-si="${si}" data-sectype="${sec.type}">
         <div class="section-card-header">
           <span class="sec-type-badge">${sec.type}</span>
           <input class="sec-name-input" type="text" placeholder="Section name"
@@ -274,6 +274,12 @@ class KindleDashboardPanel extends HTMLElement {
     root.addEventListener("change", () => this._markDirty());
     root.addEventListener("input",  () => this._markDirty());
 
+    // Live font preview in panel
+    root.querySelector("#font-select")?.addEventListener("change", (e) => {
+      if (!this._config) this._config = {};
+      this._config.font = e.target.value;
+    });
+
     // Inline-units label update
     root.querySelector("#inline-units")?.addEventListener("change", (e) => {
       root.querySelector("#inline-units-label").textContent =
@@ -319,8 +325,7 @@ class KindleDashboardPanel extends HTMLElement {
     const sections = [...root.querySelectorAll(".section-card")].map(card => {
       const si   = parseInt(card.dataset.si);
       const label = card.querySelector(`.sec-name-input[data-si="${si}"]`)?.value.trim() || "";
-      // figure out type from first item-row, or from badge
-      const badge = card.querySelector(".sec-type-badge")?.textContent || "toggles";
+      const badge = card.dataset.sectype || "toggles";
 
       const items = [...card.querySelectorAll(".item-row")].map(row => {
         const rii = parseInt(row.dataset.ii);
@@ -373,9 +378,11 @@ class KindleDashboardPanel extends HTMLElement {
     const cfg = this._collectConfig();
     const sec = cfg.sections[si];
     if (!sec) return;
-    if (type === "sensor") sec.items.push({ id: "", label: "", unit: "", hide_from_status: false });
-    if (type === "scene")  sec.items.push({ id: `sc_new_${Date.now()}`, icon: "🎭", name: "New Scene", desc: "", entity: "" });
-    if (type === "toggle" || type === "toggles") sec.items.push({ id: "", icon: "💡", label: "", hide_from_status: false });
+    // normalise plural section types to singular item types
+    const t = type.replace(/s$/, ""); // "sensors"->"sensor", "scenes"->"scene", "toggles"->"toggle"
+    if (t === "sensor") sec.items.push({ id: "", label: "", unit: "", hide_from_status: false });
+    else if (t === "scene")  sec.items.push({ id: `sc_new_${Date.now()}`, icon: "🎭", name: "New Scene", desc: "", entity: "" });
+    else sec.items.push({ id: "", icon: "💡", label: "", hide_from_status: false });
     this._config = cfg;
     this._rerender();
   }
