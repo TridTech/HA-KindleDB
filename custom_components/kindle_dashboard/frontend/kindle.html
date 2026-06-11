@@ -6,108 +6,181 @@
 <title>Home</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     background: #fff; color: #000;
-    font-family: Georgia, serif;
     width: 600px; min-height: 800px;
     overflow-x: hidden; -webkit-text-size-adjust: 100%;
+    /* BODY_FONT injected via JS after parse */
   }
+
+  /* ── STATUS BAR — compact, same height as footer ── */
   #status-bar {
     background: #000; color: #fff;
-    padding: 10px 16px;
+    padding: 5px 12px;
     display: flex; justify-content: space-between; align-items: center;
-    font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: .04em;
+    font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: .04em;
+    border-bottom: 2px solid #000;
   }
-  #status-bar .loc { font-size: 15px; font-weight: bold; letter-spacing: .08em; }
-  #status-bar .right { text-align: right; line-height: 1.5; }
-  #status-panel { border-bottom: 3px solid #000; padding: 16px; }
-  .status-grid { display: grid; gap: 10px; margin-bottom: 14px; }
-  .stat-tile { border: 2px solid #000; padding: 10px 8px 8px; text-align: center; }
-  .stat-tile .label {
-    font-family: 'Courier New', monospace; font-size: 10px;
-    letter-spacing: .12em; text-transform: uppercase; color: #555; margin-bottom: 4px;
+  #status-bar .loc {
+    font-size: 20px; font-weight: bold; letter-spacing: .1em;
+    line-height: 1;
   }
-  .stat-tile .value {
-    font-size: 22px; font-weight: bold; line-height: 1; font-family: 'Courier New', monospace;
+  #status-bar .right {
+    text-align: right; line-height: 1.4; font-size: 11px;
   }
-  .stat-tile .unit { font-size: 11px; color: #444; margin-top: 2px; font-family: 'Courier New', monospace; }
+
+  /* ── LIGHT STATUS SUMMARY ── */
   #lights-summary {
-    border: 2px solid #000; padding: 10px 14px;
-    display: flex; align-items: center; gap: 12px; background: #f5f5f5;
+    border-bottom: 3px solid #000;
+    padding: 7px 12px;
+    display: flex; align-items: center; gap: 10px; background: #f0f0f0;
   }
-  #lights-summary .dot-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  #lights-summary .dot-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
   .light-dot {
-    width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid #000; background: #fff; display: inline-block;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid #000; background: #fff; display: inline-block; flex-shrink: 0;
   }
   .light-dot.on { background: #000; }
-  #lights-summary .summary-text { font-family: 'Courier New', monospace; font-size: 12px; flex: 1; }
-  #lights-summary .summary-text strong { font-size: 15px; display: block; }
+  #lights-summary .summary-text {
+    font-family: 'Courier New', monospace; font-size: 11px; flex: 1; line-height: 1.4;
+  }
+  #lights-summary .summary-text strong { font-size: 13px; display: block; }
+
+  /* ── SECTION LABEL ── */
   .section-label {
     font-family: 'Courier New', monospace; font-size: 10px;
     letter-spacing: .18em; text-transform: uppercase;
-    padding: 8px 16px 6px; background: #eee;
-    border-bottom: 1px solid #bbb; color: #444;
+    padding: 6px 12px 5px; background: #eee;
+    border-bottom: 1px solid #bbb; border-top: 2px solid #000; color: #444;
   }
-  #scenes {
-    padding: 14px 16px; display: grid; gap: 10px; border-bottom: 2px solid #000;
+  .section-label:first-child { border-top: none; }
+
+  /* ── SENSOR GRID — compact, no touch target needed ── */
+  .sensor-grid {
+    display: grid; gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+  }
+  .sensor-tile {
+    border: 1px solid #000; padding: 5px 8px 4px; text-align: center;
+    background: #fff;
+  }
+  .sensor-tile .s-label {
+    font-family: 'Courier New', monospace; font-size: 9px;
+    letter-spacing: .1em; text-transform: uppercase; color: #555;
+    margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sensor-tile .s-value {
+    font-size: 18px; font-weight: bold; line-height: 1;
+    font-family: 'Courier New', monospace;
+  }
+  /* inline-units: value and unit on same line */
+  .sensor-tile .s-value-inline {
+    font-size: 18px; font-weight: bold; line-height: 1;
+    font-family: 'Courier New', monospace;
+    display: inline;
+  }
+  .sensor-tile .s-unit-inline {
+    font-size: 11px; color: #444;
+    font-family: 'Courier New', monospace;
+    display: inline; margin-left: 1px;
+  }
+  /* stacked unit */
+  .sensor-tile .s-unit {
+    font-size: 10px; color: #444; margin-top: 1px;
+    font-family: 'Courier New', monospace; line-height: 1;
+  }
+
+  /* ── SCENES ── */
+  .scenes-grid {
+    display: grid; gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
   }
   .scene-btn {
     border: 2px solid #000; background: #fff; padding: 0; cursor: pointer;
-    text-align: left; display: flex; flex-direction: column; min-height: 72px;
+    text-align: left; display: flex; flex-direction: column; min-height: 64px;
     overflow: hidden; -webkit-tap-highlight-color: transparent;
   }
   .scene-btn:active, .scene-btn.active-scene { background: #000; color: #fff; }
   .scene-btn:active .scene-icon-bg, .scene-btn.active-scene .scene-icon-bg { background: #222; color: #fff; }
-  .scene-btn:active .scene-desc,    .scene-btn.active-scene .scene-desc    { color: #aaa; }
-  .scene-icon-bg { background: #eee; width: 100%; padding: 10px 12px 6px; font-size: 20px; line-height: 1; }
-  .scene-body { padding: 6px 12px 10px; }
-  .scene-name { font-family: 'Courier New', monospace; font-size: 13px; font-weight: bold; letter-spacing: .04em; display: block; }
-  .scene-desc { font-size: 10px; color: #666; font-family: 'Courier New', monospace; display: block; margin-top: 2px; }
-  #toggles { padding: 14px 16px 10px; display: flex; flex-direction: column; gap: 8px; }
+  .scene-btn:active .scene-desc, .scene-btn.active-scene .scene-desc { color: #aaa; }
+  .scene-icon-bg {
+    background: #eee; width: 100%; padding: 8px 10px 5px;
+    font-size: 18px; line-height: 1;
+  }
+  .scene-body { padding: 5px 10px 8px; }
+  .scene-name {
+    font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold;
+    letter-spacing: .04em; display: block;
+  }
+  .scene-desc {
+    font-size: 10px; color: #666; font-family: 'Courier New', monospace;
+    display: block; margin-top: 1px;
+  }
+
+  /* ── TOGGLES — large touch targets ── */
+  .toggles-list {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #ddd;
+  }
   .toggle-row {
     border: 2px solid #000; display: flex; align-items: center;
     min-height: 52px; cursor: pointer;
     -webkit-tap-highlight-color: transparent; background: #fff;
   }
-  .toggle-row:active { background: #e0e0e0; }
+  .toggle-row:active { background: #e8e8e8; }
   .toggle-icon {
-    width: 50px; min-height: 52px; display: flex; align-items: center; justify-content: center;
-    font-size: 18px; background: #f0f0f0; border-right: 2px solid #000; flex-shrink: 0;
+    width: 48px; min-height: 52px; display: flex; align-items: center;
+    justify-content: center; font-size: 18px;
+    background: #f0f0f0; border-right: 2px solid #000; flex-shrink: 0;
   }
-  .toggle-label { flex: 1; padding: 0 12px; font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: .04em; }
-  .toggle-label small { display: block; font-size: 10px; color: #666; margin-top: 2px; letter-spacing: .06em; }
+  .toggle-label {
+    flex: 1; padding: 0 10px; font-family: 'Courier New', monospace;
+    font-size: 13px; letter-spacing: .04em;
+  }
+  .toggle-label small {
+    display: block; font-size: 10px; color: #666; margin-top: 1px; letter-spacing: .05em;
+  }
   .toggle-switch {
-    width: 56px; height: 28px; border: 2px solid #000;
-    margin-right: 14px; background: #fff; position: relative; flex-shrink: 0;
+    width: 52px; height: 26px; border: 2px solid #000;
+    margin-right: 12px; background: #fff; position: relative; flex-shrink: 0;
   }
   .toggle-switch::after {
     content: ''; position: absolute; top: 2px; left: 2px;
-    width: 20px; height: 20px; background: #888;
+    width: 18px; height: 18px; background: #999;
   }
   .toggle-row.on .toggle-switch { background: #000; }
-  .toggle-row.on .toggle-switch::after { left: calc(100% - 22px); background: #fff; }
+  .toggle-row.on .toggle-switch::after { left: calc(100% - 20px); background: #fff; }
+
+  /* ── FOOTER ── */
   #footer {
-    border-top: 2px solid #000; padding: 8px 16px;
+    border-top: 2px solid #000; padding: 5px 12px;
     display: flex; justify-content: space-between; align-items: center;
     font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: .06em;
   }
   #refresh-btn {
-    border: 1px solid #999; background: #fff; padding: 4px 10px;
+    border: 1px solid #999; background: #fff; padding: 3px 9px;
     font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: .06em; cursor: pointer;
   }
   #refresh-btn:active { background: #000; color: #fff; }
+
   #toast {
-    position: fixed; bottom: 48px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
     background: #000; color: #fff; font-family: 'Courier New', monospace;
-    font-size: 12px; padding: 8px 18px; display: none; white-space: nowrap;
+    font-size: 11px; padding: 6px 16px; display: none; white-space: nowrap;
   }
 </style>
 </head>
 <body>
 
+<script>/* __INJECTED_CONFIG__ */</script>
+
 <script>
-/* __INJECTED_CONFIG__ */
+// Apply font immediately before paint
+document.body.style.fontFamily = (typeof BODY_FONT !== "undefined" && BODY_FONT) || "Georgia, serif";
 </script>
 
 <div id="status-bar">
@@ -118,25 +191,17 @@
   </div>
 </div>
 
-<div id="status-panel">
-  <div class="status-grid" id="stat-grid"></div>
-  <div id="lights-summary">
-    <div class="dot-row" id="light-dots"></div>
-    <div class="summary-text">
-      <strong id="lights-on-count">—</strong>
-      <span id="lights-on-names" style="color:#555"></span>
-    </div>
+<!-- Light status strip — only shown when there are light-type toggles -->
+<div id="lights-summary" style="display:none">
+  <div class="dot-row" id="light-dots"></div>
+  <div class="summary-text">
+    <strong id="lights-on-count">—</strong>
+    <span id="lights-on-names" style="color:#666"></span>
   </div>
 </div>
 
-<!-- Scenes section — hidden if SHOW_SCENES is false -->
-<div id="scenes-section" style="display:none">
-  <div class="section-label" id="scenes-section-label">Scenes</div>
-  <div id="scenes"></div>
-</div>
-
-<div class="section-label" id="toggles-section-label">Lights &amp; Switches</div>
-<div id="toggles"></div>
+<!-- Dynamic sections rendered here -->
+<div id="sections-root"></div>
 
 <div id="footer">
   <span id="last-update">Last updated: —</span>
@@ -145,7 +210,7 @@
 <div id="toast"></div>
 
 <script>
-/* ── AUTH ──────────────────────────────────────────────────── */
+/* ── AUTH ─────────────────────────────────────────── */
 function apiHeaders() {
   return {
     "Content-Type": "application/json",
@@ -153,10 +218,10 @@ function apiHeaders() {
   };
 }
 
-/* ── STATE ─────────────────────────────────────────────────── */
+/* ── STATE ────────────────────────────────────────── */
 let entityStates = {};
 
-/* ── API HELPERS ───────────────────────────────────────────── */
+/* ── API HELPERS ──────────────────────────────────── */
 async function callService(domain, service, entityId) {
   try {
     const r = await fetch(`${HA_URL}/api/services/${domain}/${service}`, {
@@ -168,137 +233,205 @@ async function callService(domain, service, entityId) {
   } catch(e) { toast("Network error"); }
 }
 
-async function fetchState(entityId) {
+async function fetchState(id) {
   try {
-    const r = await fetch(`${HA_URL}/api/states/${entityId}`, { headers: apiHeaders() });
+    const r = await fetch(`${HA_URL}/api/states/${id}`, { headers: apiHeaders() });
     return r.ok ? await r.json() : null;
   } catch(e) { return null; }
 }
 
+/* ── COLLECT ALL ENTITY IDS ACROSS SECTIONS ───────── */
+function allEntityIds() {
+  const ids = new Set();
+  (SECTIONS || []).forEach(sec => {
+    (sec.items || []).forEach(item => {
+      if (item.id) ids.add(item.id);
+    });
+  });
+  return [...ids];
+}
+
 async function fetchAll() {
   document.getElementById("conn-status").textContent = "loading…";
-  const allIds = [...STATS.map(s => s.id), ...TOGGLES.map(t => t.id)];
-  const results = await Promise.all(allIds.map(fetchState));
+  const ids = allEntityIds();
+  const results = await Promise.all(ids.map(fetchState));
   let anyFail = false;
   results.forEach((d, i) => {
-    if (d) entityStates[allIds[i]] = d;
+    if (d) entityStates[ids[i]] = d;
     else anyFail = true;
   });
   document.getElementById("conn-status").textContent = anyFail ? "◌ partial" : "● live";
-  renderStats();
-  renderToggles();
-  renderLightDots();
+  updateAllSections();
+  updateLightSummary();
   document.getElementById("last-update").textContent =
     "Updated: " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-/* ── RENDER ────────────────────────────────────────────────── */
-function renderStats() {
-  const grid = document.getElementById("stat-grid");
-  if (!grid._built) {
-    grid.style.gridTemplateColumns = `repeat(${Math.min(STATS.length, 3)}, 1fr)`;
-    grid.innerHTML = STATS.map((s, i) => `
-      <div class="stat-tile">
-        <div class="label">${s.label}</div>
-        <div class="value" id="stat-${i}">--</div>
-        <div class="unit">${s.unit}</div>
-      </div>`).join("");
-    grid._built = true;
-  }
-  STATS.forEach((s, i) => {
-    const el = document.getElementById("stat-" + i);
-    const d  = entityStates[s.id];
-    if (el) el.textContent = d ? (isNaN(parseFloat(d.state)) ? d.state : Math.round(parseFloat(d.state))) : "--";
+/* ── LIGHT STATUS STRIP ───────────────────────────── */
+function buildLightSummary() {
+  const lights = [];
+  (SECTIONS || []).forEach(sec => {
+    if (sec.type === "toggles") {
+      (sec.items || []).filter(i => i.id.startsWith("light.") && !i.hide_from_status)
+        .forEach(i => lights.push(i));
+    }
   });
-}
-
-function renderToggles() {
-  TOGGLES.forEach(t => {
-    const row = document.getElementById("tog-" + t.id.replace(/\./g, "_"));
-    if (!row) return;
-    const d = entityStates[t.id];
-    row.classList.toggle("on", !!(d && d.state === "on"));
-  });
-}
-
-function renderLightDots() {
-  // Only lights that are NOT excluded from status
-  const statusLights = TOGGLES.filter(t => t.id.startsWith("light.") && !t.hide_from_status);
+  const strip = document.getElementById("lights-summary");
+  if (!lights.length) { strip.style.display = "none"; return; }
+  strip.style.display = "flex";
   const container = document.getElementById("light-dots");
-  container.innerHTML = "";
+  container.innerHTML = lights.map(l =>
+    `<span class="light-dot" id="dot-${l.id.replace(/\./g,'_')}" title="${l.label || l.id}"></span>`
+  ).join("");
+}
+
+function updateLightSummary() {
+  const lights = [];
+  (SECTIONS || []).forEach(sec => {
+    if (sec.type === "toggles") {
+      (sec.items || []).filter(i => i.id.startsWith("light.") && !i.hide_from_status)
+        .forEach(i => lights.push(i));
+    }
+  });
   let onCount = 0, onNames = [];
-  statusLights.forEach(t => {
-    const d = entityStates[t.id];
-    const isOn = !!(d && d.state === "on");
-    if (isOn) { onCount++; onNames.push(t.label); }
-    const dot = document.createElement("span");
-    dot.className = "light-dot" + (isOn ? " on" : "");
-    dot.title = t.label;
-    container.appendChild(dot);
+  lights.forEach(l => {
+    const d = entityStates[l.id];
+    const on = !!(d && d.state === "on");
+    if (on) { onCount++; onNames.push(l.label || l.id); }
+    const dot = document.getElementById("dot-" + l.id.replace(/\./g, "_"));
+    if (dot) dot.className = "light-dot" + (on ? " on" : "");
   });
   document.getElementById("lights-on-count").textContent =
-    onCount === 0 ? "All lights off" : onCount + " light" + (onCount > 1 ? "s" : "") + " on";
-  document.getElementById("lights-on-names").textContent =
-    onNames.length ? onNames.join(", ") : "";
+    onCount === 0 ? "All lights off" : onCount + " light" + (onCount !== 1 ? "s" : "") + " on";
+  document.getElementById("lights-on-names").textContent = onNames.join(", ");
 }
 
-/* ── BUILD UI ──────────────────────────────────────────────── */
-function buildScenes() {
-  const section = document.getElementById("scenes-section");
-  if (!SHOW_SCENES || !SCENES.length) { section.style.display = "none"; return; }
-  section.style.display = "block";
+/* ── BUILD SECTIONS ───────────────────────────────── */
+function buildAllSections() {
+  const root = document.getElementById("sections-root");
+  root.innerHTML = "";
+  (SECTIONS || []).forEach((sec, si) => {
+    const wrap = document.createElement("div");
+    wrap.className = "section-wrap";
+    wrap.id = "sec-" + si;
 
-  document.getElementById("scenes-section-label").textContent =
-    (typeof SECTION_SCENES_LABEL !== "undefined" && SECTION_SCENES_LABEL) || "Scenes";
+    const lbl = document.createElement("div");
+    lbl.className = "section-label";
+    lbl.textContent = sec.label || "";
+    wrap.appendChild(lbl);
 
-  const container = document.getElementById("scenes");
-  container.style.gridTemplateColumns = SCENES.length >= 2 ? "1fr 1fr" : "1fr";
-  SCENES.forEach(s => {
-    const btn = document.createElement("button");
-    btn.className = "scene-btn";
-    btn.id = "sc-" + s.id;
-    btn.innerHTML = `
-      <div class="scene-icon-bg">${s.icon || "🎭"}</div>
-      <div class="scene-body">
-        <span class="scene-name">${s.name}</span>
-        <span class="scene-desc">${s.desc || ""}</span>
-      </div>`;
-    btn.addEventListener("click", async () => {
-      document.querySelectorAll(".scene-btn").forEach(b => b.classList.remove("active-scene"));
-      btn.classList.add("active-scene");
-      const [domain, svc] = (s.service || "scene/turn_on").split("/");
-      await callService(domain, svc, s.entity);
-    });
-    container.appendChild(btn);
+    if      (sec.type === "sensors") buildSensorSection(wrap, sec, si);
+    else if (sec.type === "scenes")  buildScenesSection(wrap, sec, si);
+    else if (sec.type === "toggles") buildTogglesSection(wrap, sec, si);
+
+    root.appendChild(wrap);
   });
 }
 
-function buildToggles() {
-  document.getElementById("toggles-section-label").textContent =
-    (typeof SECTION_TOGGLES_LABEL !== "undefined" && SECTION_TOGGLES_LABEL) || "Lights & Switches";
+function buildSensorSection(wrap, sec, si) {
+  const grid = document.createElement("div");
+  grid.className = "sensor-grid";
+  grid.id = "sensor-grid-" + si;
+  const cols = Math.min((sec.items || []).length, 4);
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  const inline = (typeof INLINE_UNITS !== "undefined") ? INLINE_UNITS : false;
 
-  const container = document.getElementById("toggles");
-  TOGGLES.forEach(t => {
+  (sec.items || []).forEach((item, ii) => {
+    const tile = document.createElement("div");
+    tile.className = "sensor-tile";
+    tile.id = `sensor-${si}-${ii}`;
+
+    if (inline) {
+      tile.innerHTML = `
+        <div class="s-label">${item.label || item.id}</div>
+        <div><span class="s-value-inline" id="sv-${si}-${ii}">--</span><span class="s-unit-inline">${item.unit || ""}</span></div>`;
+    } else {
+      tile.innerHTML = `
+        <div class="s-label">${item.label || item.id}</div>
+        <div class="s-value" id="sv-${si}-${ii}">--</div>
+        <div class="s-unit">${item.unit || ""}</div>`;
+    }
+    grid.appendChild(tile);
+  });
+  wrap.appendChild(grid);
+}
+
+function buildScenesSection(wrap, sec, si) {
+  const grid = document.createElement("div");
+  grid.className = "scenes-grid";
+  const cols = (sec.items || []).length >= 2 ? 2 : 1;
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+  (sec.items || []).forEach((item, ii) => {
+    const btn = document.createElement("button");
+    btn.className = "scene-btn";
+    btn.id = `scene-${si}-${ii}`;
+    btn.innerHTML = `
+      <div class="scene-icon-bg">${item.icon || "🎭"}</div>
+      <div class="scene-body">
+        <span class="scene-name">${item.name || item.id}</span>
+        <span class="scene-desc">${item.desc || ""}</span>
+      </div>`;
+    btn.addEventListener("click", async () => {
+      wrap.querySelectorAll(".scene-btn").forEach(b => b.classList.remove("active-scene"));
+      btn.classList.add("active-scene");
+      await callService("scene", "turn_on", item.entity || item.id);
+    });
+    grid.appendChild(btn);
+  });
+  wrap.appendChild(grid);
+}
+
+function buildTogglesSection(wrap, sec, si) {
+  const list = document.createElement("div");
+  list.className = "toggles-list";
+
+  (sec.items || []).forEach((item, ii) => {
     const row = document.createElement("div");
     row.className = "toggle-row";
-    row.id = "tog-" + t.id.replace(/\./g, "_");
+    row.id = `toggle-${si}-${ii}`;
     row.innerHTML = `
-      <div class="toggle-icon">${t.icon || "💡"}</div>
+      <div class="toggle-icon">${item.icon || "💡"}</div>
       <div class="toggle-label">
-        ${t.label}
-        <small>${t.sublabel || t.id}</small>
+        ${item.label || item.id}
+        <small>${item.id}</small>
       </div>
       <div class="toggle-switch"></div>`;
     row.addEventListener("click", async () => {
-      const isOn = row.classList.contains("on");
-      row.classList.toggle("on", !isOn);
-      const domain = t.id.split(".")[0];
-      await callService(domain, isOn ? "turn_off" : "turn_on", t.id);
+      const on = row.classList.contains("on");
+      row.classList.toggle("on", !on);
+      const domain = (item.id || "").split(".")[0] || "light";
+      await callService(domain, on ? "turn_off" : "turn_on", item.id);
     });
-    container.appendChild(row);
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+}
+
+/* ── UPDATE ALL SECTIONS ──────────────────────────── */
+function updateAllSections() {
+  (SECTIONS || []).forEach((sec, si) => {
+    if (sec.type === "sensors") {
+      (sec.items || []).forEach((item, ii) => {
+        const el = document.getElementById(`sv-${si}-${ii}`);
+        if (!el) return;
+        const d = entityStates[item.id];
+        el.textContent = d
+          ? (isNaN(parseFloat(d.state)) ? d.state : Math.round(parseFloat(d.state) * 10) / 10)
+          : "--";
+      });
+    } else if (sec.type === "toggles") {
+      (sec.items || []).forEach((item, ii) => {
+        const row = document.getElementById(`toggle-${si}-${ii}`);
+        if (!row) return;
+        const d = entityStates[item.id];
+        row.classList.toggle("on", !!(d && d.state === "on"));
+      });
+    }
   });
 }
 
+/* ── CLOCK ────────────────────────────────────────── */
 function updateClock() {
   document.getElementById("clock").textContent =
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -306,18 +439,17 @@ function updateClock() {
 
 function toast(msg) {
   const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.style.display = "block";
+  el.textContent = msg; el.style.display = "block";
   clearTimeout(toast._t);
   toast._t = setTimeout(() => { el.style.display = "none"; }, 1800);
 }
 
-/* ── BOOT ──────────────────────────────────────────────────── */
+/* ── BOOT ─────────────────────────────────────────── */
 document.getElementById("loc-name").textContent =
   (typeof LOCATION !== "undefined" ? LOCATION : "HOME").toUpperCase();
 
-buildScenes();
-buildToggles();
+buildLightSummary();
+buildAllSections();
 updateClock();
 setInterval(updateClock, 30000);
 fetchAll();
