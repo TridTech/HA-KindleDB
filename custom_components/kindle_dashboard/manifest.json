@@ -1,13 +1,19 @@
 {
   "domain": "kindle_dashboard",
   "name": "Kindle Dashboard",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "documentation": "https://github.com/YOUR_USERNAME/kindle-dashboard",
   "issue_tracker": "https://github.com/YOUR_USERNAME/kindle-dashboard/issues",
-  "codeowners": ["@YOUR_USERNAME"],
+  "codeowners": [
+    "@YOUR_USERNAME"
+  ],
   "requirements": [],
-  "dependencies": ["http", "frontend"],
+  "dependencies": [
+    "http",
+    "frontend"
+  ],
   "config_flow": true,
   "integration_type": "service",
-  "iot_class": "local_push"
+  "iot_class": "local_push",
+  "icon": "mdi:tablet"
 }

@@ -486,7 +486,8 @@ class KindleDashboardPanel extends HTMLElement {
   _css() { return `
     @font-face{font-family:'MDI';src:url('/kindle_dashboard_files/mdi-kindle.woff') format('woff');font-weight:normal;font-style:normal}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :host{display:block;min-height:100%;background:var(--primary-background-color,#fafafa);
+    :host{display:block;min-height:100%;height:100%;overflow-y:auto;
+      background:var(--primary-background-color,#fafafa);
       color:var(--primary-text-color,#212121);
       font-family:var(--paper-font-body1_-_font-family,Roboto,sans-serif);font-size:14px}
     .top-bar{background:var(--app-header-background-color,var(--primary-color,#03a9f4));
@@ -566,14 +567,20 @@ class KindleDashboardPanel extends HTMLElement {
     /* items */
     .sec-items{display:flex;flex-direction:column;gap:6px;padding:8px 10px}
     .sec-items.two-col-items{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-    .item-row{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;
+    .item-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;
       background:var(--primary-background-color,#fff);
       border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:5px 7px}
+    /* in single-col view, prevent wrapping */
+    .sec-items:not(.two-col-items) .item-row{flex-wrap:nowrap}
     /* item-row input sizing handled above */
-    .i-icon-sel{flex:0 0 120px!important;min-width:0;font-size:11px}
-    .i-wide{flex:2 1 120px;min-width:80px}
-    .i-mid{flex:1 1 80px;min-width:60px}
-    .i-unit{width:50px!important;flex-shrink:0}
+    .i-icon-sel{flex:0 0 110px!important;min-width:0;font-size:11px}
+    .i-wide{flex:2 1 100px;min-width:0}
+    .i-mid{flex:1 1 60px;min-width:0}
+    .i-unit{width:46px!important;flex-shrink:0}
+    /* in 2-col cells: make flex items fill full row width */
+    .two-col-items .i-wide{flex:1 1 100%;min-width:0}
+    .two-col-items .i-mid{flex:1 1 100%;min-width:0}
+    .two-col-items .i-icon-sel{flex:1 1 100%!important}
     .hide-wrap{display:flex;align-items:center;gap:3px;font-size:11px;
       color:var(--secondary-text-color);white-space:nowrap;cursor:pointer;
       text-transform:none;letter-spacing:0;font-weight:400;margin-bottom:0;flex-shrink:0}
