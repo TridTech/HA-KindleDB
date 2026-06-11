@@ -73,23 +73,21 @@
   }
   .sensor-tile .s-value {
     font-size: 18px; font-weight: bold; line-height: 1;
-    font-family: 'Courier New', monospace;
+    /* inherits body font (set by BODY_FONT injection) */
   }
   /* inline-units: value and unit on same line */
   .sensor-tile .s-value-inline {
     font-size: 18px; font-weight: bold; line-height: 1;
-    font-family: 'Courier New', monospace;
     display: inline;
   }
   .sensor-tile .s-unit-inline {
-    font-size: 11px; color: #444;
-    font-family: 'Courier New', monospace;
-    display: inline; margin-left: 1px;
+    font-size: 13px; font-weight: bold; color: #333;
+    display: inline; margin-left: 2px;
   }
   /* stacked unit */
   .sensor-tile .s-unit {
-    font-size: 10px; color: #444; margin-top: 1px;
-    font-family: 'Courier New', monospace; line-height: 1;
+    font-size: 12px; font-weight: bold; color: #333;
+    margin-top: 1px; line-height: 1;
   }
 
   /* ── SCENES ── */
@@ -398,11 +396,12 @@ function buildTogglesSection(wrap, sec, si) {
     const row = document.createElement("div");
     row.className = "toggle-row";
     row.id = `toggle-${si}-${ii}`;
+    const hideNames = (typeof HIDE_ENTITY_NAMES !== "undefined") ? HIDE_ENTITY_NAMES : false;
     row.innerHTML = `
       <div class="toggle-icon">${item.icon || "💡"}</div>
       <div class="toggle-label">
         ${item.label || item.id}
-        <small>${item.id}</small>
+        ${hideNames ? "" : `<small>${item.id}</small>`}
       </div>
       <div class="toggle-switch"></div>`;
     row.addEventListener("click", async () => {

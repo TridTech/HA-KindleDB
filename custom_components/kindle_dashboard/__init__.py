@@ -12,10 +12,12 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     CONF_FONT,
+    CONF_HIDE_ENTITY_NAMES,
     CONF_INLINE_UNITS,
     CONF_LOCATION_NAME,
     CONF_SECTIONS,
     DEFAULT_FONT,
+    DEFAULT_HIDE_ENTITY_NAMES,
     DEFAULT_INLINE_UNITS,
     DEFAULT_LOCATION_NAME,
     DEFAULT_SECTIONS,
@@ -74,17 +76,62 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate old config entries to the current schema without data loss.
+
+    Every time new top-level keys are added to the config, bump CONFIG_VERSION
+    in const.py and add a migration step here that fills in the new defaults.
+    Existing user data is always preserved.
+    """
+    from .const import CONFIG_VERSION
+
+    _LOGGER.debug(
+        "Migrating Kindle Dashboard config from version %s to %s",
+        entry.version, CONFIG_VERSION,
+    )
+
+    data = {**entry.data}
+    options = {**entry.options}
+
+    # ── v1 → v2: added hide_entity_names, font, inline_units ─────────────
+    if entry.version < 2:
+        for store in (data, options):
+            store.setdefault(CONF_FONT,             DEFAULT_FONT)
+            store.setdefault(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
+            store.setdefault(CONF_HIDE_ENTITY_NAMES,DEFAULT_HIDE_ENTITY_NAMES)
+            # Migrate old flat scenes/toggles/stats to new sections format
+            if CONF_SECTIONS not in store and any(
+                k in store for k in ("scenes", "toggles", "stats")
+            ):
+                store[CONF_SECTIONS] = DEFAULT_SECTIONS
+            store.setdefault(CONF_SECTIONS, DEFAULT_SECTIONS)
+
+    hass.config_entries.async_update_entry(
+        entry, data=data, options=options, version=CONFIG_VERSION
+    )
+    _LOGGER.info("Kindle Dashboard config migrated to version %s", CONFIG_VERSION)
+    return True
+
+
 def _merged_config(entry: ConfigEntry) -> dict:
-    base = dict(entry.data)
+    """Merge entry.data and entry.options, with options taking precedence.
+    Fill any missing keys with defaults so new options are always available
+    even on old config entries that haven't been through migration yet.
+    """
+    base = {
+        CONF_LOCATION_NAME:      DEFAULT_LOCATION_NAME,
+        CONF_SECTIONS:           DEFAULT_SECTIONS,
+        CONF_FONT:               DEFAULT_FONT,
+        CONF_INLINE_UNITS:       DEFAULT_INLINE_UNITS,
+        CONF_HIDE_ENTITY_NAMES:  DEFAULT_HIDE_ENTITY_NAMES,
+    }
+    base.update(entry.data)
     base.update(entry.options)
     return base
 
 
 class KindleView(HomeAssistantView):
-    """Serve the Kindle dashboard HTML at /api/kindle_dashboard/kindle.
-
-    Requires ?token=<long-lived-token> in the URL.
-    """
+    """Serve the Kindle dashboard HTML at /api/kindle_dashboard/kindle."""
 
     url = "/api/kindle_dashboard/kindle"
     name = "api:kindle_dashboard:kindle"
@@ -104,23 +151,25 @@ class KindleView(HomeAssistantView):
         if not entries:
             return Response(text="Kindle Dashboard integration is not set up.", status=503)
 
-        cfg          = _merged_config(entries[0])
-        location     = cfg.get(CONF_LOCATION_NAME, DEFAULT_LOCATION_NAME)
-        sections     = cfg.get(CONF_SECTIONS,      DEFAULT_SECTIONS)
-        font         = cfg.get(CONF_FONT,          DEFAULT_FONT)
-        inline_units = cfg.get(CONF_INLINE_UNITS,  DEFAULT_INLINE_UNITS)
+        cfg              = _merged_config(entries[0])
+        location         = cfg.get(CONF_LOCATION_NAME,     DEFAULT_LOCATION_NAME)
+        sections         = cfg.get(CONF_SECTIONS,          DEFAULT_SECTIONS)
+        font             = cfg.get(CONF_FONT,              DEFAULT_FONT)
+        inline_units     = cfg.get(CONF_INLINE_UNITS,      DEFAULT_INLINE_UNITS)
+        hide_entity_names= cfg.get(CONF_HIDE_ENTITY_NAMES, DEFAULT_HIDE_ENTITY_NAMES)
 
         template_path = os.path.join(os.path.dirname(__file__), "frontend", "kindle.html")
         with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
         injected = (
-            f"const HA_URL       = window.location.origin;\n"
-            f"const HA_TOKEN     = {json.dumps(token)};\n"
-            f"const LOCATION     = {json.dumps(location)};\n"
-            f"const SECTIONS     = {json.dumps(sections)};\n"
-            f"const BODY_FONT    = {json.dumps(font)};\n"
-            f"const INLINE_UNITS = {json.dumps(inline_units)};\n"
+            f"const HA_URL            = window.location.origin;\n"
+            f"const HA_TOKEN          = {json.dumps(token)};\n"
+            f"const LOCATION          = {json.dumps(location)};\n"
+            f"const SECTIONS          = {json.dumps(sections)};\n"
+            f"const BODY_FONT         = {json.dumps(font)};\n"
+            f"const INLINE_UNITS      = {json.dumps(inline_units)};\n"
+            f"const HIDE_ENTITY_NAMES = {json.dumps(hide_entity_names)};\n"
         )
         html = html.replace("/* __INJECTED_CONFIG__ */", injected)
         return Response(text=html, content_type="text/html", charset="utf-8")

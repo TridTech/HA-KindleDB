@@ -1,7 +1,7 @@
 {
   "domain": "kindle_dashboard",
   "name": "Kindle Dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "documentation": "https://github.com/YOUR_USERNAME/kindle-dashboard",
   "issue_tracker": "https://github.com/YOUR_USERNAME/kindle-dashboard/issues",
   "codeowners": ["@YOUR_USERNAME"],

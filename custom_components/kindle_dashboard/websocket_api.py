@@ -10,17 +10,26 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
 from .const import (
+    CONF_FONT,
+    CONF_HIDE_ENTITY_NAMES,
+    CONF_INLINE_UNITS,
+    CONF_LOCATION_NAME,
+    CONF_SECTIONS,
+    DOMAIN,
+)
+
+ALLOWED_KEYS = {
     CONF_LOCATION_NAME,
     CONF_SECTIONS,
     CONF_FONT,
     CONF_INLINE_UNITS,
-    DOMAIN,
-)
+    CONF_HIDE_ENTITY_NAMES,
+    "kindle_token",
+}
 
 
 @callback
 def async_setup(hass: HomeAssistant) -> None:
-    """Register WebSocket commands."""
     websocket_api.async_register_command(hass, ws_get_config)
     websocket_api.async_register_command(hass, ws_save_config)
     websocket_api.async_register_command(hass, ws_get_entities)
@@ -28,37 +37,25 @@ def async_setup(hass: HomeAssistant) -> None:
 
 @websocket_api.websocket_command({"type": f"{DOMAIN}/get_config"})
 @websocket_api.async_response
-async def ws_get_config(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
+async def ws_get_config(hass, connection, msg):
     entry = _get_entry(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_found", "Integration not set up")
         return
-    data = {**entry.data, **entry.options}
-    connection.send_result(msg["id"], data)
+    from . import _merged_config
+    connection.send_result(msg["id"], _merged_config(entry))
 
 
 @websocket_api.websocket_command(
     {"type": f"{DOMAIN}/save_config", vol.Required("config"): dict}
 )
 @websocket_api.async_response
-async def ws_save_config(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
+async def ws_save_config(hass, connection, msg):
     entry = _get_entry(hass)
     if entry is None:
         connection.send_error(msg["id"], "not_found", "Integration not set up")
         return
-    allowed_keys = {
-        CONF_LOCATION_NAME, CONF_SECTIONS, CONF_FONT, CONF_INLINE_UNITS,
-        "kindle_token",
-    }
-    filtered = {k: v for k, v in msg["config"].items() if k in allowed_keys}
+    filtered = {k: v for k, v in msg["config"].items() if k in ALLOWED_KEYS}
     hass.config_entries.async_update_entry(entry, options={**entry.options, **filtered})
     connection.send_result(msg["id"], {"success": True})
 
@@ -67,12 +64,11 @@ async def ws_save_config(
     {"type": f"{DOMAIN}/get_entities", vol.Optional("domains"): [str]}
 )
 @websocket_api.async_response
-async def ws_get_entities(
-    hass: HomeAssistant,
-    connection: websocket_api.ActiveConnection,
-    msg: dict[str, Any],
-) -> None:
-    domains = msg.get("domains") or ["light", "switch", "scene", "sensor", "input_boolean"]
+async def ws_get_entities(hass, connection, msg):
+    domains = msg.get("domains") or [
+        "light", "switch", "scene", "sensor", "input_boolean",
+        "media_player", "fan", "cover", "climate", "lock",
+    ]
     entities = []
     for state in hass.states.async_all():
         domain = state.entity_id.split(".")[0]
