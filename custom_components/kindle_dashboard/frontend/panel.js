@@ -9,14 +9,14 @@ const SECTION_TYPES = [
 ];
 
 const FONTS = [
-  { value: "Georgia, serif",              label: "Georgia (default)" },
-  { value: "'Courier New', monospace",    label: "Courier New"       },
-  { value: "'Times New Roman', serif",    label: "Times New Roman"   },
-  { value: "Arial, sans-serif",           label: "Arial"             },
-  { value: "Helvetica, sans-serif",       label: "Helvetica"         },
-  { value: "Verdana, sans-serif",         label: "Verdana"           },
-  { value: "Palatino, serif",             label: "Palatino"          },
-  { value: "Bookman, serif",              label: "Bookman"           },
+  { value: "Georgia, serif",           label: "Georgia (default)" },
+  { value: "'Courier New', monospace", label: "Courier New"       },
+  { value: "'Times New Roman', serif", label: "Times New Roman"   },
+  { value: "Arial, sans-serif",        label: "Arial"             },
+  { value: "Helvetica, sans-serif",    label: "Helvetica"         },
+  { value: "Verdana, sans-serif",      label: "Verdana"           },
+  { value: "Palatino, serif",          label: "Palatino"          },
+  { value: "Bookman, serif",           label: "Bookman"           },
 ];
 
 const ALL_DOMAINS = ["light", "switch", "scene", "sensor", "input_boolean",
@@ -26,10 +26,11 @@ class KindleDashboardPanel extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
-    this._hass    = null;
-    this._config  = null;
+    this._hass     = null;
+    this._config   = null;
     this._entities = [];
-    this._dirty   = false;
+    this._dirty    = false;
+    this._listenersAttached = false;   // attach once, never again
   }
 
   set hass(hass) {
@@ -41,7 +42,7 @@ class KindleDashboardPanel extends HTMLElement {
 
   async _init() {
     await Promise.all([this._loadConfig(), this._loadEntities()]);
-    this._render();
+    this._renderFull();
   }
 
   async _loadConfig() {
@@ -59,9 +60,12 @@ class KindleDashboardPanel extends HTMLElement {
     } catch(e) { this._entities = []; }
   }
 
-  // ── RENDER ──────────────────────────────────────────────────────────────
+  // ── RENDER ─────────────────────────────────────────────────────────────
+  // _renderFull rebuilds the entire shadow DOM and attaches listeners once.
+  // _renderSections only replaces the sections list content, preserving the
+  // top-level DOM so listeners never need to be re-attached.
 
-  _render() {
+  _renderFull() {
     const cfg         = this._config || {};
     const location    = cfg.location_name || "Home";
     const sections    = cfg.sections || [];
@@ -72,7 +76,7 @@ class KindleDashboardPanel extends HTMLElement {
       ? `${window.location.origin}/api/kindle_dashboard/kindle?token=${encodeURIComponent(token)}`
       : "";
 
-    this.shadowRoot.innerHTML = `<style>${this._css()}</style>` + `
+    this.shadowRoot.innerHTML = `<style>${this._css()}</style>
       <div class="top-bar">
         <h1>📱 Kindle Dashboard</h1>
         ${tokenUrl ? `<a href="${this._esc(tokenUrl)}" target="_blank">Open Kindle View ↗</a>` : ""}
@@ -84,7 +88,6 @@ class KindleDashboardPanel extends HTMLElement {
       </div>
       <div class="content">
 
-        <!-- KINDLE URL -->
         <div class="card">
           <div class="card-header"><span class="icon">🔗</span> Kindle URL</div>
           <div class="card-body">
@@ -105,7 +108,6 @@ class KindleDashboardPanel extends HTMLElement {
           </div>
         </div>
 
-        <!-- GENERAL -->
         <div class="card">
           <div class="card-header"><span class="icon">⚙️</span> General</div>
           <div class="card-body">
@@ -117,8 +119,8 @@ class KindleDashboardPanel extends HTMLElement {
               <div>
                 <label>Font</label>
                 <select id="font-select">
-                  ${FONTS.map(f => `<option value="${this._esc(f.value)}" ${f.value === font ? "selected" : ""}
-                    style="font-family:${this._esc(f.value)}">${f.label}</option>`).join("")}
+                  ${FONTS.map(f => `<option value="${this._esc(f.value)}"
+                    ${f.value === font ? "selected" : ""}>${f.label}</option>`).join("")}
                 </select>
               </div>
               <div>
@@ -137,44 +139,48 @@ class KindleDashboardPanel extends HTMLElement {
           </div>
         </div>
 
-        <!-- SECTIONS -->
         <div class="card">
           <div class="card-header">
             <span class="icon">📋</span> Sections
             <span class="hint-inline">displayed top-to-bottom on the Kindle</span>
           </div>
           <div class="card-body">
-            <div id="sections-list">
-              ${sections.map((s, i) => this._sectionCard(s, i)).join("")}
-            </div>
+            <div id="sections-list"></div>
             <div class="add-section-row">
               <select id="new-section-type">
                 ${SECTION_TYPES.map(t => `<option value="${t.value}">${t.label}</option>`).join("")}
               </select>
-              <button class="add-btn" id="add-section-btn">+ Add Section</button>
+              <button id="add-section-btn" class="add-btn">+ Add Section</button>
             </div>
           </div>
         </div>
 
       </div>
-      <div id="toast"></div>
-    `;
+      <div id="toast"></div>`;
 
+    // Attach all event listeners exactly once
     this._attachListeners();
+    this._listenersAttached = true;
+
+    // Fill sections list
+    this._renderSections();
   }
 
-  // ── SECTION CARD ─────────────────────────────────────────────────────────
+  // Replace only the sections list innerHTML — no listener re-attachment needed
+  _renderSections() {
+    const sections = (this._config || {}).sections || [];
+    const el = this.shadowRoot.querySelector("#sections-list");
+    if (!el) return;
+    el.innerHTML = sections.map((s, i) => this._sectionCardHTML(s, i)).join("");
+  }
 
-  _sectionCard(sec, si) {
-    const typeLabel = SECTION_TYPES.find(t => t.value === sec.type)?.label || sec.type;
-    const items = sec.items || [];
+  // ── SECTION / ITEM HTML ─────────────────────────────────────────────────
 
-    const itemsHtml = items.map((item, ii) => this._itemRow(sec.type, item, si, ii)).join("");
-
+  _sectionCardHTML(sec, si) {
+    const items    = sec.items || [];
     const addLabel = sec.type === "sensors" ? "+ Add Sensor"
                    : sec.type === "scenes"  ? "+ Add Scene"
                    :                          "+ Add Toggle";
-
     return `
       <div class="section-card" data-si="${si}" data-sectype="${sec.type}">
         <div class="section-card-header">
@@ -184,53 +190,50 @@ class KindleDashboardPanel extends HTMLElement {
           <div class="sec-header-actions">
             <button class="move-btn" data-si="${si}" data-dir="-1" title="Move up">↑</button>
             <button class="move-btn" data-si="${si}" data-dir="1"  title="Move down">↓</button>
-            <button class="del-section-btn" data-si="${si}" title="Remove section">🗑</button>
+            <button class="del-section-btn" data-si="${si}">🗑</button>
           </div>
         </div>
-        <div class="section-items" id="sec-items-${si}">
-          ${itemsHtml}
+        <div class="section-items">
+          ${items.map((item, ii) => this._itemRowHTML(sec.type, item, si, ii)).join("")}
         </div>
-        <button class="add-item-btn" data-si="${si}" data-type="${sec.type}">${addLabel}</button>
+        <button class="add-item-btn" data-si="${si}" data-sectype="${sec.type}">${addLabel}</button>
       </div>`;
   }
 
-  _itemRow(type, item, si, ii) {
-    if (type === "sensors") return this._sensorItemRow(item, si, ii);
-    if (type === "scenes")  return this._sceneItemRow(item, si, ii);
-    return this._toggleItemRow(item, si, ii);
+  _itemRowHTML(sectype, item, si, ii) {
+    if (sectype === "sensors") return this._sensorRowHTML(item, si, ii);
+    if (sectype === "scenes")  return this._sceneRowHTML(item, si, ii);
+    return this._toggleRowHTML(item, si, ii);
   }
 
-  _sensorItemRow(item, si, ii) {
-    const ents = this._entities.filter(e => e.domain === "sensor");
-    const opts = ents.map(e =>
-      `<option value="${e.entity_id}" ${e.entity_id === item.id ? "selected" : ""}>${e.name} (${e.entity_id})</option>`
-    ).join("");
+  _sensorRowHTML(item, si, ii) {
+    const opts = this._entities
+      .filter(e => e.domain === "sensor")
+      .map(e => `<option value="${e.entity_id}"
+        ${e.entity_id === item.id ? "selected" : ""}>${e.name} (${e.entity_id})</option>`)
+      .join("");
     return `
-      <div class="item-row sensor-row" data-si="${si}" data-ii="${ii}" data-type="sensor">
+      <div class="item-row" data-si="${si}" data-ii="${ii}" data-itemtype="sensor">
         <select class="i-entity" data-si="${si}" data-ii="${ii}">
           <option value="">— pick sensor —</option>${opts}
         </select>
         <input class="i-label" type="text" placeholder="Label"
                value="${this._esc(item.label || "")}" data-si="${si}" data-ii="${ii}">
-        <input class="i-unit" type="text" placeholder="Unit" style="width:56px"
+        <input class="i-unit" type="text" placeholder="Unit" style="width:58px"
                value="${this._esc(item.unit || "")}" data-si="${si}" data-ii="${ii}">
-        <div class="hide-wrap" title="Exclude from light status strip">
-          <input type="checkbox" class="i-hide" data-si="${si}" data-ii="${ii}"
-                 ${item.hide_from_status ? "checked" : ""}>
-          <span>Hide<br>status</span>
-        </div>
         <button class="del-item-btn" data-si="${si}" data-ii="${ii}">✕</button>
       </div>`;
   }
 
-  _sceneItemRow(item, si, ii) {
-    const ents = this._entities.filter(e => e.domain === "scene");
-    const opts = ents.map(e =>
-      `<option value="${e.entity_id}" ${e.entity_id === (item.entity || item.id) ? "selected" : ""}>${e.name} (${e.entity_id})</option>`
-    ).join("");
+  _sceneRowHTML(item, si, ii) {
+    const opts = this._entities
+      .filter(e => e.domain === "scene")
+      .map(e => `<option value="${e.entity_id}"
+        ${e.entity_id === (item.entity || item.id) ? "selected" : ""}>${e.name} (${e.entity_id})</option>`)
+      .join("");
     return `
-      <div class="item-row scene-row" data-si="${si}" data-ii="${ii}" data-type="scene">
-        <input class="i-icon" type="text" placeholder="🎭" style="width:40px;text-align:center"
+      <div class="item-row" data-si="${si}" data-ii="${ii}" data-itemtype="scene">
+        <input class="i-icon" type="text" placeholder="🎭" style="width:42px;text-align:center"
                value="${this._esc(item.icon || "")}" data-si="${si}" data-ii="${ii}">
         <input class="i-label" type="text" placeholder="Name"
                value="${this._esc(item.name || "")}" data-si="${si}" data-ii="${ii}">
@@ -241,16 +244,15 @@ class KindleDashboardPanel extends HTMLElement {
       </div>`;
   }
 
-  _toggleItemRow(item, si, ii) {
-    const ents = this._entities.filter(e =>
-      ["light","switch","input_boolean","fan","cover","lock","media_player"].includes(e.domain)
-    );
-    const opts = ents.map(e =>
-      `<option value="${e.entity_id}" ${e.entity_id === item.id ? "selected" : ""}>${e.name} (${e.entity_id})</option>`
-    ).join("");
+  _toggleRowHTML(item, si, ii) {
+    const opts = this._entities
+      .filter(e => ["light","switch","input_boolean","fan","cover","lock","media_player"].includes(e.domain))
+      .map(e => `<option value="${e.entity_id}"
+        ${e.entity_id === item.id ? "selected" : ""}>${e.name} (${e.entity_id})</option>`)
+      .join("");
     return `
-      <div class="item-row toggle-row" data-si="${si}" data-ii="${ii}" data-type="toggle">
-        <input class="i-icon" type="text" placeholder="💡" style="width:40px;text-align:center"
+      <div class="item-row" data-si="${si}" data-ii="${ii}" data-itemtype="toggle">
+        <input class="i-icon" type="text" placeholder="💡" style="width:42px;text-align:center"
                value="${this._esc(item.icon || "")}" data-si="${si}" data-ii="${ii}">
         <input class="i-label" type="text" placeholder="Label"
                value="${this._esc(item.label || "")}" data-si="${si}" data-ii="${ii}">
@@ -266,45 +268,55 @@ class KindleDashboardPanel extends HTMLElement {
       </div>`;
   }
 
-  // ── LISTENERS ────────────────────────────────────────────────────────────
+  // ── LISTENERS — attached once on _renderFull, never again ──────────────
 
   _attachListeners() {
     const root = this.shadowRoot;
 
-    root.addEventListener("change", () => this._markDirty());
-    root.addEventListener("input",  () => this._markDirty());
-
-    // Live font preview in panel
-    root.querySelector("#font-select")?.addEventListener("change", (e) => {
-      if (!this._config) this._config = {};
-      this._config.font = e.target.value;
+    // Generic dirty-marking for all inputs (but NOT for button clicks)
+    root.addEventListener("input", (e) => {
+      if (e.target.tagName !== "BUTTON") this._markDirty();
+    });
+    root.addEventListener("change", (e) => {
+      if (e.target.tagName !== "BUTTON") this._markDirty();
+      // Live font update
+      if (e.target.id === "font-select") {
+        if (!this._config) this._config = {};
+        this._config.font = e.target.value;
+      }
+      // Inline-units label
+      if (e.target.id === "inline-units") {
+        root.querySelector("#inline-units-label").textContent =
+          e.target.checked ? "Inline (22° C)" : "Stacked (value then unit)";
+      }
     });
 
-    // Inline-units label update
-    root.querySelector("#inline-units")?.addEventListener("change", (e) => {
-      root.querySelector("#inline-units-label").textContent =
-        e.target.checked ? "Inline (22° C)" : "Stacked (value then unit)";
-    });
-
+    // All button clicks in one delegated handler
     root.addEventListener("click", (e) => {
-      const addSection = e.target.closest("#add-section-btn");
-      if (addSection) { this._addSection(); return; }
+      const btn = e.target.closest("button");
+      if (!btn) return;
 
-      const addItem = e.target.closest(".add-item-btn");
-      if (addItem) { this._addItem(parseInt(addItem.dataset.si), addItem.dataset.type); return; }
+      if (btn.id === "add-section-btn") { this._addSection();  return; }
+      if (btn.id === "save-btn")        { this._save();        return; }
+      if (btn.id === "discard-btn")     { this._config = null; this._init(); return; }
 
-      const delSection = e.target.closest(".del-section-btn");
-      if (delSection) { this._deleteSection(parseInt(delSection.dataset.si)); return; }
-
-      const delItem = e.target.closest(".del-item-btn");
-      if (delItem) { this._deleteItem(parseInt(delItem.dataset.si), parseInt(delItem.dataset.ii)); return; }
-
-      const move = e.target.closest(".move-btn");
-      if (move) { this._moveSection(parseInt(move.dataset.si), parseInt(move.dataset.dir)); return; }
+      if (btn.classList.contains("add-item-btn")) {
+        this._addItem(parseInt(btn.dataset.si), btn.dataset.sectype);
+        return;
+      }
+      if (btn.classList.contains("del-section-btn")) {
+        this._deleteSection(parseInt(btn.dataset.si));
+        return;
+      }
+      if (btn.classList.contains("del-item-btn")) {
+        this._deleteItem(parseInt(btn.dataset.si), parseInt(btn.dataset.ii));
+        return;
+      }
+      if (btn.classList.contains("move-btn")) {
+        this._moveSection(parseInt(btn.dataset.si), parseInt(btn.dataset.dir));
+        return;
+      }
     });
-
-    root.querySelector("#save-btn")   ?.addEventListener("click", () => this._save());
-    root.querySelector("#discard-btn")?.addEventListener("click", () => { this._config = null; this._init(); });
   }
 
   _markDirty() {
@@ -312,7 +324,10 @@ class KindleDashboardPanel extends HTMLElement {
     this.shadowRoot.querySelector("#save-bar")?.classList.add("visible");
   }
 
-  // ── COLLECT ──────────────────────────────────────────────────────────────
+  // ── COLLECT ────────────────────────────────────────────────────────────
+  // Reads current DOM state into a plain config object.
+  // Items with no entity selected are kept (not filtered) — they are only
+  // stripped on Save so empty rows remain visible while editing.
 
   _collectConfig() {
     const root = this.shadowRoot;
@@ -323,46 +338,48 @@ class KindleDashboardPanel extends HTMLElement {
     const inline_units = root.querySelector("#inline-units")?.checked        || false;
 
     const sections = [...root.querySelectorAll(".section-card")].map(card => {
-      const si   = parseInt(card.dataset.si);
-      const label = card.querySelector(`.sec-name-input[data-si="${si}"]`)?.value.trim() || "";
-      const badge = card.dataset.sectype || "toggles";
+      const si      = parseInt(card.dataset.si);
+      const sectype = card.dataset.sectype || "toggles";
+      const label   = card.querySelector(`.sec-name-input`)?.value.trim() || "";
 
       const items = [...card.querySelectorAll(".item-row")].map(row => {
-        const rii = parseInt(row.dataset.ii);
-        const rsi = parseInt(row.dataset.si);
-        const type = row.dataset.type;
-        const entity = row.querySelector(`.i-entity[data-si="${rsi}"][data-ii="${rii}"]`)?.value || "";
-        const lbl    = row.querySelector(`.i-label[data-si="${rsi}"][data-ii="${rii}"]`)?.value.trim() || "";
-        const icon   = row.querySelector(`.i-icon[data-si="${rsi}"][data-ii="${rii}"]`)?.value.trim() || "";
-        const unit   = row.querySelector(`.i-unit[data-si="${rsi}"][data-ii="${rii}"]`)?.value.trim() || "";
-        const hide   = row.querySelector(`.i-hide[data-si="${rsi}"][data-ii="${rii}"]`)?.checked || false;
+        const ii     = parseInt(row.dataset.ii);
+        const itype  = row.dataset.itemtype;
+        const entity = row.querySelector(".i-entity")?.value  || "";
+        const lbl    = row.querySelector(".i-label")?.value.trim()  || "";
+        const icon   = row.querySelector(".i-icon")?.value.trim()   || "";
+        const unit   = row.querySelector(".i-unit")?.value.trim()   || "";
+        const hide   = row.querySelector(".i-hide")?.checked        || false;
 
-        if (type === "sensor") return { id: entity, label: lbl, unit, hide_from_status: hide };
-        if (type === "scene")  return { id: `sc_${si}_${rii}`, icon, name: lbl || entity, desc: "", entity };
+        if (itype === "sensor") return { id: entity, label: lbl, unit, hide_from_status: hide };
+        if (itype === "scene")  return { id: `sc_${si}_${ii}`, icon, name: lbl || entity, desc: "", entity };
         return { id: entity, icon, label: lbl || entity, hide_from_status: hide };
-      }).filter(item => item.id);
+      });
+      // keep all items during editing; filter empty ones only at save time
 
-      return { id: `s_${si}`, type: badge, label, items };
+      return { id: `s_${si}`, type: sectype, label, items };
     });
 
     return { location_name: location, kindle_token, font, inline_units, sections };
   }
 
-  // ── ADD / DELETE / MOVE ───────────────────────────────────────────────────
+  // ── MUTATIONS — each one: collect DOM → mutate array → store → re-render sections only
 
   _addSection() {
     const cfg  = this._collectConfig();
     const type = this.shadowRoot.querySelector("#new-section-type")?.value || "toggles";
     cfg.sections.push({ id: `s_new_${Date.now()}`, type, label: "", items: [] });
     this._config = cfg;
-    this._rerender();
+    this._markDirty();
+    this._renderSections();
   }
 
   _deleteSection(si) {
     const cfg = this._collectConfig();
     cfg.sections.splice(si, 1);
     this._config = cfg;
-    this._rerender();
+    this._markDirty();
+    this._renderSections();
   }
 
   _moveSection(si, dir) {
@@ -371,50 +388,52 @@ class KindleDashboardPanel extends HTMLElement {
     if (to < 0 || to >= cfg.sections.length) return;
     [cfg.sections[si], cfg.sections[to]] = [cfg.sections[to], cfg.sections[si]];
     this._config = cfg;
-    this._rerender();
+    this._markDirty();
+    this._renderSections();
   }
 
-  _addItem(si, type) {
+  _addItem(si, sectype) {
     const cfg = this._collectConfig();
     const sec = cfg.sections[si];
     if (!sec) return;
-    // normalise plural section types to singular item types
-    const t = type.replace(/s$/, ""); // "sensors"->"sensor", "scenes"->"scene", "toggles"->"toggle"
-    if (t === "sensor") sec.items.push({ id: "", label: "", unit: "", hide_from_status: false });
-    else if (t === "scene")  sec.items.push({ id: `sc_new_${Date.now()}`, icon: "🎭", name: "New Scene", desc: "", entity: "" });
+    if (sectype === "sensors") sec.items.push({ id: "", label: "", unit: "", hide_from_status: false });
+    else if (sectype === "scenes") sec.items.push({ id: `sc_new_${Date.now()}`, icon: "🎭", name: "", desc: "", entity: "" });
     else sec.items.push({ id: "", icon: "💡", label: "", hide_from_status: false });
     this._config = cfg;
-    this._rerender();
+    this._markDirty();
+    this._renderSections();
   }
 
   _deleteItem(si, ii) {
     const cfg = this._collectConfig();
     cfg.sections[si]?.items.splice(ii, 1);
     this._config = cfg;
-    this._rerender();
+    this._markDirty();
+    this._renderSections();
   }
 
-  _rerender() {
-    this._render();
-    this.shadowRoot.querySelector("#save-bar")?.classList.add("visible");
-    this._dirty = true;
-  }
-
-  // ── SAVE ─────────────────────────────────────────────────────────────────
+  // ── SAVE ───────────────────────────────────────────────────────────────
 
   async _save() {
     const cfg = this._collectConfig();
+    // Strip items with no entity selected before persisting
+    cfg.sections.forEach(sec => {
+      sec.items = sec.items.filter(item =>
+        sec.type === "scenes" ? !!item.entity : !!item.id
+      );
+    });
     try {
       await this._hass.callWS({ type: "kindle_dashboard/save_config", config: cfg });
       this._config = cfg;
       this._dirty  = false;
       this.shadowRoot.querySelector("#save-bar")?.classList.remove("visible");
       this._toast("✓ Saved");
-      this._render();
+      // Re-render sections to reflect post-save filtering
+      this._renderSections();
     } catch(e) { this._toast("Error: " + e.message); }
   }
 
-  // ── CSS ───────────────────────────────────────────────────────────────────
+  // ── CSS ────────────────────────────────────────────────────────────────
 
   _css() { return `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -498,7 +517,6 @@ class KindleDashboardPanel extends HTMLElement {
     .ha-switch input:checked + .ha-slider { background: var(--primary-color, #03a9f4); }
     .ha-switch input:checked + .ha-slider::before { transform: translateX(16px); }
     .switch-label { font-size: 13px; cursor: pointer; user-select: none; }
-    /* ── sections list ── */
     #sections-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
     .section-card {
       border: 1px solid var(--divider-color, #ddd); border-radius: 6px; overflow: hidden;
@@ -506,8 +524,7 @@ class KindleDashboardPanel extends HTMLElement {
     .section-card-header {
       display: flex; align-items: center; gap: 8px;
       background: var(--secondary-background-color, #f5f5f5);
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--divider-color, #ddd);
+      padding: 8px 10px; border-bottom: 1px solid var(--divider-color, #ddd);
     }
     .sec-type-badge {
       font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
@@ -519,7 +536,10 @@ class KindleDashboardPanel extends HTMLElement {
       border: 1px solid transparent; border-radius: 4px;
       background: transparent; color: var(--primary-text-color);
     }
-    .sec-name-input:focus { border-color: var(--primary-color, #03a9f4); background: var(--primary-background-color, #fff); }
+    .sec-name-input:focus {
+      border-color: var(--primary-color, #03a9f4);
+      background: var(--primary-background-color, #fff);
+    }
     .sec-header-actions { display: flex; gap: 4px; flex-shrink: 0; }
     .move-btn, .del-section-btn {
       background: none; border: 1px solid var(--divider-color, #ccc);
@@ -529,7 +549,6 @@ class KindleDashboardPanel extends HTMLElement {
     .move-btn:hover { background: var(--secondary-background-color, #eee); }
     .del-section-btn { color: var(--error-color, #db4437); }
     .del-section-btn:hover { background: rgba(219,68,55,.08); }
-    /* items */
     .section-items { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; }
     .item-row {
       display: flex; align-items: center; gap: 6px;
@@ -537,10 +556,8 @@ class KindleDashboardPanel extends HTMLElement {
       border: 1px solid var(--divider-color, #e0e0e0);
       border-radius: 4px; padding: 6px 8px;
     }
-    .item-row input[type=text], .item-row select {
-      padding: 5px 7px; font-size: 12px;
-    }
-    .item-row .i-label { flex: 1; }
+    .item-row input[type=text], .item-row select { padding: 5px 7px; font-size: 12px; }
+    .item-row .i-label  { flex: 1; }
     .item-row .i-entity { flex: 1.4; }
     .hide-wrap {
       display: flex; flex-direction: column; align-items: center; gap: 1px;
@@ -582,7 +599,7 @@ class KindleDashboardPanel extends HTMLElement {
     }
   `; }
 
-  // ── UTIL ─────────────────────────────────────────────────────────────────
+  // ── UTIL ───────────────────────────────────────────────────────────────
 
   _esc(s) {
     return String(s)
