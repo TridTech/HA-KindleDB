@@ -72,21 +72,27 @@
 
   /* ── SENSOR GRID — compact, no touch target needed ── */
   .sensor-grid {
-    display: grid; gap: 8px;
-    padding: 10px 12px;
+    display: grid; gap: 6px;
+    padding: 8px 10px;
     border-bottom: 1px solid #ddd;
+    overflow: hidden;
+    /* row height set by content but capped so large fonts don't push layout */
+    grid-auto-rows: minmax(0, auto);
   }
   .sensor-tile {
-    border: 1px solid #000; padding: 5px 8px 4px; text-align: center;
-    background: #fff;
+    border: 1px solid #000; text-align: center; background: #fff;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 4px 6px; overflow: hidden; min-height: 0;
   }
   .sensor-tile .s-label {
     font-size: var(--sub-fs, 9px);
     letter-spacing: .1em; text-transform: uppercase; color: #555;
-    margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.2; flex-shrink: 0;
   }
   .sensor-tile .s-value {
     font-size: var(--value-fs, 18px); font-weight: bold; line-height: 1;
+    overflow: hidden; flex-shrink: 0;
   }
   /* inline-units: value and unit on same line */
   .sensor-tile .s-value-inline {
@@ -95,12 +101,12 @@
   }
   .sensor-tile .s-unit-inline {
     font-size: var(--sub-fs, 10px); font-weight: bold; color: #333;
-    display: inline; margin-left: 2px;
+    display: inline; margin-left: 1px; line-height: 1;
   }
   /* stacked unit */
   .sensor-tile .s-unit {
     font-size: var(--sub-fs, 10px); font-weight: bold; color: #333;
-    margin-top: 1px; line-height: 1;
+    margin-top: 0; line-height: 1.1; flex-shrink: 0; overflow: hidden;
   }
 
   /* ── SCENES ── */
