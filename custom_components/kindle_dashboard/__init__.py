@@ -24,6 +24,7 @@ from .const import (
     DEFAULT_LABEL_ITALIC,
     DEFAULT_LABEL_UNDERLINE,
     DEFAULT_PAGE_HEIGHT,
+    DEFAULT_PAGE_SCALE,
     DEFAULT_PAGE_WIDTH,
     DEFAULT_SUB_BOLD,
     DEFAULT_SUB_FONT_SIZE,
@@ -122,6 +123,7 @@ def _merged_config(entry: ConfigEntry) -> dict:
         CONF_HIDE_ENTITY_NAMES: DEFAULT_HIDE_ENTITY_NAMES,
         "page_width":           DEFAULT_PAGE_WIDTH,
         "page_height":          DEFAULT_PAGE_HEIGHT,
+        "page_scale":           DEFAULT_PAGE_SCALE,
         "label_font_size":      DEFAULT_LABEL_FONT_SIZE,
         "label_bold":           DEFAULT_LABEL_BOLD,
         "label_italic":         DEFAULT_LABEL_ITALIC,
@@ -169,6 +171,7 @@ class KindleView(HomeAssistantView):
         inline_units    = cfg.get(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
         page_width      = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
         page_height     = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
+        page_scale      = float(cfg.get("page_scale",     DEFAULT_PAGE_SCALE))
         label_font_size = cfg.get("label_font_size",     DEFAULT_LABEL_FONT_SIZE)
         label_bold      = cfg.get("label_bold",          DEFAULT_LABEL_BOLD)
         label_italic    = cfg.get("label_italic",        DEFAULT_LABEL_ITALIC)
@@ -195,6 +198,7 @@ class KindleView(HomeAssistantView):
             f"const BODY_FONT        = {json.dumps(font)};\n"
             f"const INLINE_UNITS     = {json.dumps(inline_units)};\n"
             f"const PAGE_HEIGHT      = {json.dumps(page_height)};\n"
+            f"const PAGE_SCALE       = {json.dumps(page_scale)};\n"
             f"const LABEL_FONT_SIZE  = {json.dumps(label_font_size)};\n"
             f"const LABEL_BOLD       = {json.dumps(label_bold)};\n"
             f"const LABEL_ITALIC     = {json.dumps(label_italic)};\n"
@@ -211,7 +215,7 @@ class KindleView(HomeAssistantView):
         html = html.replace("/* __INJECTED_CONFIG__ */", injected)
         html = html.replace(
             "/* __VIEWPORT_WIDTH__ */",
-            f"width={page_width}, initial-scale=1.0"
+            f"width={page_width}, initial-scale=1.0, maximum-scale=1.0"
         )
         return Response(text=html, content_type="text/html", charset="utf-8")
 

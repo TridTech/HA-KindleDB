@@ -110,6 +110,14 @@ class KindleDashboardPanel extends HTMLElement {
                 </div>
               </div>
             </div>
+            <div class="form-row">
+              <label>Scale</label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <input type="range" id="page-scale" min="0.5" max="3.0" step="0.05" style="flex:1">
+                <span id="page-scale-display" class="num-unit" style="width:40px;text-align:right">1.0×</span>
+              </div>
+              <p class="hint" style="margin-top:4px">Scales all content proportionally for high-DPI screens.</p>
+            </div>
           </div>
         </div>
 
@@ -215,6 +223,9 @@ class KindleDashboardPanel extends HTMLElement {
     // inline-units synced via _paintSections (in sensors sec header)
     root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
     root.querySelector("#page-height").value        = cfg.page_height ?? 800;
+    const _scv = cfg.page_scale ?? 1.0;
+    root.querySelector("#page-scale").value = _scv;
+    root.querySelector("#page-scale-display").textContent = parseFloat(_scv).toFixed(2) + "×";
     root.querySelector("#label-font-size").value    = cfg.label_font_size  ?? 13;
     root.querySelector("#sub-font-size").value      = cfg.sub_font_size    ?? 10;
     root.querySelector("#value-font-size").value    = cfg.value_font_size  ?? 18;
@@ -333,13 +344,23 @@ class KindleDashboardPanel extends HTMLElement {
     const root = this.shadowRoot;
 
     // Any input/change → mark dirty; font select also updates preview
-    root.addEventListener("input",  () => this._markDirty());
+    root.addEventListener("input", (e) => {
+      this._markDirty();
+      if (e.target.id === "page-scale") {
+        const v = parseFloat(e.target.value).toFixed(2);
+        root.querySelector("#page-scale-display").textContent = v + "×";
+      }
+    });
     root.addEventListener("change", (e) => {
       this._markDirty();
       if (e.target.id === "font-select") {
         if (!this._config) this._config = {};
         this._config.font = e.target.value;
         e.target.style.fontFamily = e.target.value;
+      }
+      if (e.target.id === "page-scale") {
+        root.querySelector("#page-scale-display").textContent =
+          parseFloat(e.target.value).toFixed(2) + "×";
       }
     });
 
@@ -399,6 +420,7 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.inline_units = inlineEl ? inlineEl.checked : (this._config?.inline_units || false);
     cfg.page_width       = parseInt(root.querySelector("#page-width")?.value)  || 600;
     cfg.page_height      = parseInt(root.querySelector("#page-height")?.value) || 800;
+    cfg.page_scale       = parseFloat(root.querySelector("#page-scale")?.value) || 1.0;
     cfg.label_font_size  = parseInt(root.querySelector("#label-font-size")?.value)  || 13;
     cfg.sub_font_size    = parseInt(root.querySelector("#sub-font-size")?.value)    || 10;
     cfg.value_font_size  = parseInt(root.querySelector("#value-font-size")?.value)  || 18;

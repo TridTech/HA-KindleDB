@@ -27,6 +27,7 @@ ALLOWED_KEYS = {
     "kindle_token",
     "page_width",
     "page_height",
+    "page_scale",
     "label_font_size", "label_bold", "label_italic", "label_underline",
     "sub_font_size",   "sub_bold",   "sub_italic",   "sub_underline",
     "value_font_size", "value_bold", "value_italic", "value_underline",

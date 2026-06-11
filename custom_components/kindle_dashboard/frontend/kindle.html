@@ -25,7 +25,8 @@
   body {
     background: #fff; color: #000;
     overflow-x: hidden; -webkit-text-size-adjust: 100%;
-    /* width, min-height, font set by JS boot block */
+    display: flex; flex-direction: column;
+    /* width, height, font set by JS boot block */
   }
 
   /* ── STATUS BAR — compact, same height as footer ── */
@@ -192,10 +193,14 @@
   .toggle-row.on .toggle-switch::after { left: calc(100% - 20px); background: #fff; }
 
   /* ── FOOTER ── */
+  #sections-root {
+    flex: 1;  /* fills remaining space, pushing footer to bottom */
+  }
   #footer {
     border-top: 2px solid #000; padding: 5px 12px;
     display: flex; justify-content: space-between; align-items: center;
     font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: .06em;
+    flex-shrink: 0;
   }
   #refresh-btn {
     border: 1px solid #999; background: #fff; padding: 3px 9px;
@@ -219,8 +224,15 @@
 <script>
 // Apply font and size vars immediately before paint
 document.body.style.fontFamily = (typeof BODY_FONT !== "undefined" && BODY_FONT) || "Georgia, serif";
-document.body.style.width     = ((typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600) + "px";
-document.body.style.minHeight = ((typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800) + "px";
+const _pw = (typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600;
+const _ph = (typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800;
+const _sc = (typeof PAGE_SCALE  !== "undefined" && PAGE_SCALE)  || 1.0;
+document.body.style.width          = _pw + "px";
+document.body.style.height         = _ph + "px";
+if (_sc !== 1.0) {
+  document.body.style.transform       = "scale(" + _sc + ")";
+  document.body.style.transformOrigin = "top left";
+}
 const _lfs  = (typeof LABEL_FONT_SIZE !== "undefined" ? LABEL_FONT_SIZE : 13) + "px";
 const _sfs  = (typeof SUB_FONT_SIZE   !== "undefined" ? SUB_FONT_SIZE   : 10) + "px";
 const _vfs  = (typeof VALUE_FONT_SIZE !== "undefined" ? VALUE_FONT_SIZE : 18) + "px";
