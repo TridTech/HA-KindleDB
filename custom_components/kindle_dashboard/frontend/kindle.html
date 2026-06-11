@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=600, initial-scale=1.0">
+<meta name="viewport" content="/* __VIEWPORT_WIDTH__ */">
 <title>Home</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     background: #fff; color: #000;
-    width: 600px; min-height: 800px;
+    min-height: 800px;
     overflow-x: hidden; -webkit-text-size-adjust: 100%;
-    /* BODY_FONT injected via JS after parse */
+    /* width, font set by JS boot block */
   }
 
   /* ── STATUS BAR — compact, same height as footer ── */
@@ -49,7 +49,7 @@
 
   /* ── SECTION LABEL ── */
   .section-label {
-    font-size: 10px;
+    font-size: var(--sub-fs, 10px);
     letter-spacing: .18em; text-transform: uppercase;
     padding: 6px 12px 5px; background: #eee;
     border-bottom: 1px solid #bbb; border-top: 2px solid #000; color: #444;
@@ -67,26 +67,25 @@
     background: #fff;
   }
   .sensor-tile .s-label {
-    font-size: 9px;
+    font-size: var(--sub-fs, 9px);
     letter-spacing: .1em; text-transform: uppercase; color: #555;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .sensor-tile .s-value {
-    font-size: 18px; font-weight: bold; line-height: 1;
-    /* inherits body font (set by BODY_FONT injection) */
+    font-size: var(--value-fs, 18px); font-weight: bold; line-height: 1;
   }
   /* inline-units: value and unit on same line */
   .sensor-tile .s-value-inline {
-    font-size: 18px; font-weight: bold; line-height: 1;
+    font-size: var(--value-fs, 18px); font-weight: bold; line-height: 1;
     display: inline;
   }
   .sensor-tile .s-unit-inline {
-    font-size: 13px; font-weight: bold; color: #333;
+    font-size: var(--sub-fs, 10px); font-weight: bold; color: #333;
     display: inline; margin-left: 2px;
   }
   /* stacked unit */
   .sensor-tile .s-unit {
-    font-size: 12px; font-weight: bold; color: #333;
+    font-size: var(--sub-fs, 10px); font-weight: bold; color: #333;
     margin-top: 1px; line-height: 1;
   }
 
@@ -110,7 +109,7 @@
   }
   .scene-body { padding: 5px 10px 8px; }
   .scene-name {
-    font-size: 12px; font-weight: bold;
+    font-size: var(--label-fs, 12px); font-weight: bold;
     letter-spacing: .04em; display: block;
   }
   .scene-desc {
@@ -145,10 +144,11 @@
   }
   .toggle-label {
     flex: 1; padding: 0 10px;
-    font-size: 13px; letter-spacing: .04em;
+    font-size: var(--label-fs, 13px); letter-spacing: .04em;
   }
   .toggle-label small {
-    display: block; font-size: 10px; color: #666; margin-top: 1px; letter-spacing: .05em;
+    display: block; font-size: var(--sub-fs, 10px); color: #666;
+    margin-top: 1px; letter-spacing: .05em;
   }
   .toggle-switch {
     width: 52px; height: 26px; border: 2px solid #000;
@@ -185,8 +185,15 @@
 <script>/* __INJECTED_CONFIG__ */</script>
 
 <script>
-// Apply font immediately before paint
+// Apply font and size vars immediately before paint
 document.body.style.fontFamily = (typeof BODY_FONT !== "undefined" && BODY_FONT) || "Georgia, serif";
+document.body.style.width = ((typeof PAGE_WIDTH !== "undefined" && PAGE_WIDTH) || 600) + "px";
+const _lfs = (typeof LABEL_FONT_SIZE !== "undefined" ? LABEL_FONT_SIZE : 13) + "px";
+const _sfs = (typeof SUB_FONT_SIZE   !== "undefined" ? SUB_FONT_SIZE   : 10) + "px";
+const _vfs = (typeof VALUE_FONT_SIZE !== "undefined" ? VALUE_FONT_SIZE : 18) + "px";
+document.documentElement.style.setProperty("--label-fs", _lfs);
+document.documentElement.style.setProperty("--sub-fs",   _sfs);
+document.documentElement.style.setProperty("--value-fs", _vfs);
 </script>
 
 <div id="status-bar">
@@ -365,7 +372,8 @@ function buildSensorSection(wrap, sec, si) {
 function buildScenesSection(wrap, sec, si) {
   const grid = document.createElement("div");
   grid.className = "scenes-grid";
-  const cols = (sec.items || []).length >= 2 ? 2 : 1;
+  // Use two_columns setting if set, otherwise auto-detect
+  const cols = sec.two_columns ? 2 : ((sec.items || []).length >= 2 ? 2 : 1);
   grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 
   (sec.items || []).forEach((item, ii) => {

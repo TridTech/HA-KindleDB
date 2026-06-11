@@ -92,9 +92,18 @@ class KindleDashboardPanel extends HTMLElement {
         <div class="card" id="card-general">
           <div class="card-header"><span class="icon">⚙️</span> General</div>
           <div class="card-body">
-            <div class="form-row">
-              <label>Location Name</label>
-              <input type="text" id="location-name" placeholder="Home">
+            <div class="form-row two-col">
+              <div>
+                <label>Location Name</label>
+                <input type="text" id="location-name" placeholder="Home">
+              </div>
+              <div>
+                <label>Page width</label>
+                <div class="num-row">
+                  <input type="number" id="page-width" min="320" max="1920" step="10">
+                  <span class="num-unit">px</span>
+                </div>
+              </div>
             </div>
             <div class="form-row two-col">
               <div>
@@ -102,13 +111,33 @@ class KindleDashboardPanel extends HTMLElement {
                 <select id="font-select"></select>
               </div>
               <div>
-                <label>Options</label>
-                <div class="check-group">
-                  <label class="check-row">
-                    <input type="checkbox" id="inline-units">
-                    <span>Inline units <em>(22 °F)</em></span>
-                  </label>
-
+                <label>Sensor Units</label>
+                <label class="opt-row">
+                  <input type="checkbox" id="inline-units">
+                  <span>Inline <em>(22 °F)</em></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-row three-col">
+              <div>
+                <label>Label font size</label>
+                <div class="num-row">
+                  <input type="number" id="label-font-size" min="6" max="32" step="1">
+                  <span class="num-unit">px</span>
+                </div>
+              </div>
+              <div>
+                <label>ID / Unit font size</label>
+                <div class="num-row">
+                  <input type="number" id="sub-font-size" min="6" max="24" step="1">
+                  <span class="num-unit">px</span>
+                </div>
+              </div>
+              <div>
+                <label>Value font size</label>
+                <div class="num-row">
+                  <input type="number" id="value-font-size" min="8" max="48" step="1">
+                  <span class="num-unit">px</span>
                 </div>
               </div>
             </div>
@@ -163,6 +192,10 @@ class KindleDashboardPanel extends HTMLElement {
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
     root.querySelector("#inline-units").checked     = !!cfg.inline_units;
+    root.querySelector("#page-width").value         = cfg.page_width ?? 600;
+    root.querySelector("#label-font-size").value    = cfg.label_font_size  ?? 13;
+    root.querySelector("#sub-font-size").value      = cfg.sub_font_size    ?? 10;
+    root.querySelector("#value-font-size").value    = cfg.value_font_size  ?? 18;
 
 
     // Font select — build options with per-option font styling
@@ -192,9 +225,9 @@ class KindleDashboardPanel extends HTMLElement {
         <div class="sec-header">
           <span class="sec-badge">${sec.type}</span>
           <input class="sec-name" type="text" placeholder="Section name" value="${this._esc(sec.label||"")}">
-          ${sec.type === "toggles"
+          ${(sec.type === "toggles" || sec.type === "scenes")
             ? `<label class="two-col-wrap" title="Two-column layout on Kindle">
-                 <input type="checkbox" class="sec-twocol"${twoCol?" checked":""}> 2-col
+                 <input type="checkbox" class="sec-twocol"${twoCol?" checked":""}> 2 columns
                </label>` : ""}
           <label class="two-col-wrap" title="Hide entity IDs in this section">
             <input type="checkbox" class="sec-hideids"${sec.hide_entity_ids?" checked":""}> hide IDs
@@ -316,6 +349,10 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.inline_units     = root.querySelector("#inline-units")?.checked        || false;
+    cfg.page_width       = parseInt(root.querySelector("#page-width")?.value)  || 600;
+    cfg.label_font_size  = parseInt(root.querySelector("#label-font-size")?.value)  || 13;
+    cfg.sub_font_size    = parseInt(root.querySelector("#sub-font-size")?.value)    || 10;
+    cfg.value_font_size  = parseInt(root.querySelector("#value-font-size")?.value)  || 18;
 
 
     cfg.sections = [...root.querySelectorAll(".section-card")].map(card => {
@@ -477,13 +514,20 @@ class KindleDashboardPanel extends HTMLElement {
     input[type=text]:focus,select:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
     /* Inside item rows: reset width:100% so flex sizing works */
     .item-row input[type=text],.item-row select{width:auto;padding:4px 6px;font-size:12px}
-    /* checkboxes in general card */
-    .check-group{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-    .check-row{display:flex;align-items:center;gap:7px;cursor:pointer;
+    /* general card option rows */
+    .opt-row{display:flex;align-items:center;gap:7px;cursor:pointer;
       font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;
-      color:var(--primary-text-color,#212121);margin-bottom:0}
-    .check-row input[type=checkbox]{width:15px;height:15px;flex-shrink:0;margin:0}
-    .check-row em{font-style:normal;color:var(--secondary-text-color,#888);font-size:12px}
+      color:var(--primary-text-color,#212121);margin-top:6px;margin-bottom:0}
+    .opt-row input[type=checkbox]{width:15px;height:15px;flex-shrink:0;margin:0}
+    .opt-row em{font-style:normal;color:var(--secondary-text-color,#888);font-size:12px}
+    .form-row.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .num-row{display:flex;align-items:center;gap:4px}
+    .num-row input[type=number]{width:64px;padding:7px 8px;
+      border:1px solid var(--divider-color,#ccc);border-radius:4px;
+      background:var(--primary-background-color,#fff);
+      color:var(--primary-text-color,#212121);font-size:13px;text-align:center}
+    .num-row input[type=number]:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
+    .num-unit{font-size:13px;color:var(--secondary-text-color,#888)}
     /* sections */
     #sections-root{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
     .section-card{border:1px solid var(--divider-color,#ddd);border-radius:6px;overflow:hidden}

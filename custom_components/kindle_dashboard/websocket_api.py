@@ -25,6 +25,10 @@ ALLOWED_KEYS = {
     CONF_INLINE_UNITS,
     CONF_HIDE_ENTITY_NAMES,
     "kindle_token",
+    "page_width",
+    "label_font_size",
+    "sub_font_size",
+    "value_font_size",
 }
 
 
