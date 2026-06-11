@@ -108,10 +108,7 @@ class KindleDashboardPanel extends HTMLElement {
                     <input type="checkbox" id="inline-units">
                     <span>Inline units <em>(22 °F)</em></span>
                   </label>
-                  <label class="check-row">
-                    <input type="checkbox" id="hide-entity-names">
-                    <span>Hide entity IDs on toggles</span>
-                  </label>
+
                 </div>
               </div>
             </div>
@@ -166,7 +163,7 @@ class KindleDashboardPanel extends HTMLElement {
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
     root.querySelector("#inline-units").checked     = !!cfg.inline_units;
-    root.querySelector("#hide-entity-names").checked= !!cfg.hide_entity_names;
+
 
     // Font select — build options with per-option font styling
     const fontSel  = root.querySelector("#font-select");
@@ -199,6 +196,9 @@ class KindleDashboardPanel extends HTMLElement {
             ? `<label class="two-col-wrap" title="Two-column layout on Kindle">
                  <input type="checkbox" class="sec-twocol"${twoCol?" checked":""}> 2-col
                </label>` : ""}
+          <label class="two-col-wrap" title="Hide entity IDs in this section">
+            <input type="checkbox" class="sec-hideids"${sec.hide_entity_ids?" checked":""}> hide IDs
+          </label>
           <div class="sec-actions">
             <button class="btn-move-sec" data-dir="-1">↑</button>
             <button class="btn-move-sec" data-dir="1">↓</button>
@@ -316,12 +316,13 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.inline_units     = root.querySelector("#inline-units")?.checked        || false;
-    cfg.hide_entity_names= root.querySelector("#hide-entity-names")?.checked   || false;
+
 
     cfg.sections = [...root.querySelectorAll(".section-card")].map(card => {
       const sectype   = card.querySelector(".sec-badge")?.textContent?.trim() || "toggles";
-      const label     = card.querySelector(".sec-name")?.value.trim() || "";
-      const two_col   = card.querySelector(".sec-twocol")?.checked    || false;
+      const label        = card.querySelector(".sec-name")?.value.trim()  || "";
+      const two_col      = card.querySelector(".sec-twocol")?.checked       || false;
+      const hide_ids     = card.querySelector(".sec-hideids")?.checked      || false;
 
       const items = [...card.querySelectorAll(".item-row")].map(row => {
         const entity = row.querySelector(".i-entity")?.value || "";
@@ -335,7 +336,7 @@ class KindleDashboardPanel extends HTMLElement {
         return { id: entity, icon, label: lbl, hide_from_status: hide };
       });
 
-      return { type: sectype, label, two_columns: two_col, items };
+      return { type: sectype, label, two_columns: two_col, hide_entity_ids: hide_ids, items };
     });
 
     return cfg;
@@ -474,6 +475,8 @@ class KindleDashboardPanel extends HTMLElement {
       background:var(--primary-background-color,#fff);
       color:var(--primary-text-color,#212121);font-size:13px}
     input[type=text]:focus,select:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
+    /* Inside item rows: reset width:100% so flex sizing works */
+    .item-row input[type=text],.item-row select{width:auto;padding:4px 6px;font-size:12px}
     /* checkboxes in general card */
     .check-group{display:flex;flex-direction:column;gap:8px;margin-top:4px}
     .check-row{display:flex;align-items:center;gap:7px;cursor:pointer;
@@ -510,11 +513,11 @@ class KindleDashboardPanel extends HTMLElement {
     .item-row{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;
       background:var(--primary-background-color,#fff);
       border:1px solid var(--divider-color,#e0e0e0);border-radius:4px;padding:5px 7px}
-    .item-row input[type=text],.item-row select{padding:4px 6px;font-size:12px}
-    .i-icon{width:38px;flex-shrink:0;text-align:center}
-    .i-wide{flex:2;min-width:0}
-    .i-mid{flex:1;min-width:0}
-    .i-unit{width:52px;flex-shrink:0}
+    /* item-row input sizing handled above */
+    .i-icon{width:36px!important;flex-shrink:0;text-align:center}
+    .i-wide{flex:2 1 120px;min-width:80px}
+    .i-mid{flex:1 1 80px;min-width:60px}
+    .i-unit{width:50px!important;flex-shrink:0}
     .hide-wrap{display:flex;align-items:center;gap:3px;font-size:11px;
       color:var(--secondary-text-color);white-space:nowrap;cursor:pointer;
       text-transform:none;letter-spacing:0;font-weight:400;margin-bottom:0;flex-shrink:0}

@@ -156,20 +156,18 @@ class KindleView(HomeAssistantView):
         sections         = cfg.get(CONF_SECTIONS,          DEFAULT_SECTIONS)
         font             = cfg.get(CONF_FONT,              DEFAULT_FONT)
         inline_units     = cfg.get(CONF_INLINE_UNITS,      DEFAULT_INLINE_UNITS)
-        hide_entity_names= cfg.get(CONF_HIDE_ENTITY_NAMES, DEFAULT_HIDE_ENTITY_NAMES)
 
         template_path = os.path.join(os.path.dirname(__file__), "frontend", "kindle.html")
         with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
         injected = (
-            f"const HA_URL            = window.location.origin;\n"
-            f"const HA_TOKEN          = {json.dumps(token)};\n"
-            f"const LOCATION          = {json.dumps(location)};\n"
-            f"const SECTIONS          = {json.dumps(sections)};\n"
-            f"const BODY_FONT         = {json.dumps(font)};\n"
-            f"const INLINE_UNITS      = {json.dumps(inline_units)};\n"
-            f"const HIDE_ENTITY_NAMES = {json.dumps(hide_entity_names)};\n"
+            f"const HA_URL       = window.location.origin;\n"
+            f"const HA_TOKEN     = {json.dumps(token)};\n"
+            f"const LOCATION     = {json.dumps(location)};\n"
+            f"const SECTIONS     = {json.dumps(sections)};\n"
+            f"const BODY_FONT    = {json.dumps(font)};\n"
+            f"const INLINE_UNITS = {json.dumps(inline_units)};\n"
         )
         html = html.replace("/* __INJECTED_CONFIG__ */", injected)
         return Response(text=html, content_type="text/html", charset="utf-8")

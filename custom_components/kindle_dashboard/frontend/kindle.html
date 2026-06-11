@@ -43,13 +43,13 @@
   }
   .light-dot.on { background: #000; }
   #lights-summary .summary-text {
-    font-family: 'Courier New', monospace; font-size: 11px; flex: 1; line-height: 1.4;
+    font-size: 11px; flex: 1; line-height: 1.4;
   }
   #lights-summary .summary-text strong { font-size: 13px; display: block; }
 
   /* ── SECTION LABEL ── */
   .section-label {
-    font-family: 'Courier New', monospace; font-size: 10px;
+    font-size: 10px;
     letter-spacing: .18em; text-transform: uppercase;
     padding: 6px 12px 5px; background: #eee;
     border-bottom: 1px solid #bbb; border-top: 2px solid #000; color: #444;
@@ -67,7 +67,7 @@
     background: #fff;
   }
   .sensor-tile .s-label {
-    font-family: 'Courier New', monospace; font-size: 9px;
+    font-size: 9px;
     letter-spacing: .1em; text-transform: uppercase; color: #555;
     margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -110,11 +110,11 @@
   }
   .scene-body { padding: 5px 10px 8px; }
   .scene-name {
-    font-family: 'Courier New', monospace; font-size: 12px; font-weight: bold;
+    font-size: 12px; font-weight: bold;
     letter-spacing: .04em; display: block;
   }
   .scene-desc {
-    font-size: 10px; color: #666; font-family: 'Courier New', monospace;
+    font-size: 10px; color: #666;
     display: block; margin-top: 1px;
   }
 
@@ -144,7 +144,7 @@
     background: #f0f0f0; border-right: 2px solid #000; flex-shrink: 0;
   }
   .toggle-label {
-    flex: 1; padding: 0 10px; font-family: 'Courier New', monospace;
+    flex: 1; padding: 0 10px;
     font-size: 13px; letter-spacing: .04em;
   }
   .toggle-label small {
@@ -349,11 +349,11 @@ function buildSensorSection(wrap, sec, si) {
 
     if (inline) {
       tile.innerHTML = `
-        <div class="s-label">${item.label || item.id}</div>
+        <div class="s-label">${item.label || (sec.hide_entity_ids ? '' : item.id)}</div>
         <div><span class="s-value-inline" id="sv-${si}-${ii}">--</span><span class="s-unit-inline">${item.unit || ""}</span></div>`;
     } else {
       tile.innerHTML = `
-        <div class="s-label">${item.label || item.id}</div>
+        <div class="s-label">${item.label || (sec.hide_entity_ids ? '' : item.id)}</div>
         <div class="s-value" id="sv-${si}-${ii}">--</div>
         <div class="s-unit">${item.unit || ""}</div>`;
     }
@@ -396,12 +396,11 @@ function buildTogglesSection(wrap, sec, si) {
     const row = document.createElement("div");
     row.className = "toggle-row";
     row.id = `toggle-${si}-${ii}`;
-    const hideNames = (typeof HIDE_ENTITY_NAMES !== "undefined") ? HIDE_ENTITY_NAMES : false;
     row.innerHTML = `
       <div class="toggle-icon">${item.icon || "💡"}</div>
       <div class="toggle-label">
         ${item.label || item.id}
-        ${hideNames ? "" : `<small>${item.id}</small>`}
+        ${sec.hide_entity_ids ? "" : `<small>${item.id}</small>`}
       </div>
       <div class="toggle-switch"></div>`;
     row.addEventListener("click", async () => {
