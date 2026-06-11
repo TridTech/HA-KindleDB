@@ -26,6 +26,7 @@ ALLOWED_KEYS = {
     CONF_HIDE_ENTITY_NAMES,
     "kindle_token",
     "page_width",
+    "page_height",
     "label_font_size",
     "sub_font_size",
     "value_font_size",

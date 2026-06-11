@@ -9,9 +9,8 @@
 
   body {
     background: #fff; color: #000;
-    min-height: 800px;
     overflow-x: hidden; -webkit-text-size-adjust: 100%;
-    /* width, font set by JS boot block */
+    /* width, min-height, font set by JS boot block */
   }
 
   /* ── STATUS BAR — compact, same height as footer ── */
@@ -187,7 +186,8 @@
 <script>
 // Apply font and size vars immediately before paint
 document.body.style.fontFamily = (typeof BODY_FONT !== "undefined" && BODY_FONT) || "Georgia, serif";
-document.body.style.width = ((typeof PAGE_WIDTH !== "undefined" && PAGE_WIDTH) || 600) + "px";
+document.body.style.width     = ((typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600) + "px";
+document.body.style.minHeight = ((typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800) + "px";
 const _lfs = (typeof LABEL_FONT_SIZE !== "undefined" ? LABEL_FONT_SIZE : 13) + "px";
 const _sfs = (typeof SUB_FONT_SIZE   !== "undefined" ? SUB_FONT_SIZE   : 10) + "px";
 const _vfs = (typeof VALUE_FONT_SIZE !== "undefined" ? VALUE_FONT_SIZE : 18) + "px";

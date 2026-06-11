@@ -104,6 +104,13 @@ class KindleDashboardPanel extends HTMLElement {
                   <span class="num-unit">px</span>
                 </div>
               </div>
+              <div>
+                <label>Page height</label>
+                <div class="num-row">
+                  <input type="number" id="page-height" min="320" max="2560" step="10">
+                  <span class="num-unit">px</span>
+                </div>
+              </div>
             </div>
             <div class="form-row two-col">
               <div>
@@ -192,7 +199,8 @@ class KindleDashboardPanel extends HTMLElement {
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
     root.querySelector("#inline-units").checked     = !!cfg.inline_units;
-    root.querySelector("#page-width").value         = cfg.page_width ?? 600;
+    root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
+    root.querySelector("#page-height").value        = cfg.page_height ?? 800;
     root.querySelector("#label-font-size").value    = cfg.label_font_size  ?? 13;
     root.querySelector("#sub-font-size").value      = cfg.sub_font_size    ?? 10;
     root.querySelector("#value-font-size").value    = cfg.value_font_size  ?? 18;
@@ -350,6 +358,7 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.inline_units     = root.querySelector("#inline-units")?.checked        || false;
     cfg.page_width       = parseInt(root.querySelector("#page-width")?.value)  || 600;
+    cfg.page_height      = parseInt(root.querySelector("#page-height")?.value) || 800;
     cfg.label_font_size  = parseInt(root.querySelector("#label-font-size")?.value)  || 13;
     cfg.sub_font_size    = parseInt(root.querySelector("#sub-font-size")?.value)    || 10;
     cfg.value_font_size  = parseInt(root.querySelector("#value-font-size")?.value)  || 18;

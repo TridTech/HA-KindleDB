@@ -19,6 +19,7 @@ from .const import (
     DEFAULT_FONT,
     DEFAULT_HIDE_ENTITY_NAMES,
     DEFAULT_INLINE_UNITS,
+    DEFAULT_PAGE_HEIGHT,
     DEFAULT_PAGE_WIDTH,
     DEFAULT_LABEL_FONT_SIZE,
     DEFAULT_LOCATION_NAME,
@@ -128,6 +129,7 @@ def _merged_config(entry: ConfigEntry) -> dict:
         CONF_FONT:               DEFAULT_FONT,
         CONF_INLINE_UNITS:       DEFAULT_INLINE_UNITS,
         CONF_HIDE_ENTITY_NAMES:  DEFAULT_HIDE_ENTITY_NAMES,
+        "page_height":           DEFAULT_PAGE_HEIGHT,
         "page_width":            DEFAULT_PAGE_WIDTH,
         "label_font_size":       DEFAULT_LABEL_FONT_SIZE,
         "sub_font_size":         DEFAULT_SUB_FONT_SIZE,
@@ -169,12 +171,14 @@ class KindleView(HomeAssistantView):
         with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
+        page_height      = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
         page_width       = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
         label_font_size  = cfg.get("label_font_size",  DEFAULT_LABEL_FONT_SIZE)
         sub_font_size    = cfg.get("sub_font_size",    DEFAULT_SUB_FONT_SIZE)
         value_font_size  = cfg.get("value_font_size",  DEFAULT_VALUE_FONT_SIZE)
 
         injected = (
+            f"const PAGE_HEIGHT     = {json.dumps(page_height)};\n"
             f"const PAGE_WIDTH      = {json.dumps(page_width)};\n"
             f"const HA_URL          = window.location.origin;\n"
             f"const HA_TOKEN        = {json.dumps(token)};\n"
