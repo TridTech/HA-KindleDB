@@ -124,26 +124,41 @@ class KindleDashboardPanel extends HTMLElement {
               <label>Font</label>
               <select id="font-select"></select>
             </div>
-            <div class="form-row three-col">
-              <div>
-                <label>Label font size</label>
+            <div class="font-style-grid">
+              <div class="font-style-row">
+                <label class="fsr-label">Label</label>
                 <div class="num-row">
                   <input type="number" id="label-font-size" min="6" max="32" step="1">
                   <span class="num-unit">px</span>
                 </div>
+                <div class="biu-row">
+                  <button type="button" class="biu-btn" id="label-bold"   data-active="false" title="Bold"><b>B</b></button>
+                  <button type="button" class="biu-btn" id="label-italic" data-active="false" title="Italic"><i>I</i></button>
+                  <button type="button" class="biu-btn" id="label-underline" data-active="false" title="Underline"><u>U</u></button>
+                </div>
               </div>
-              <div>
-                <label>ID / Unit font size</label>
+              <div class="font-style-row">
+                <label class="fsr-label">ID / Unit</label>
                 <div class="num-row">
                   <input type="number" id="sub-font-size" min="6" max="24" step="1">
                   <span class="num-unit">px</span>
                 </div>
+                <div class="biu-row">
+                  <button type="button" class="biu-btn" id="sub-bold"   data-active="false" title="Bold"><b>B</b></button>
+                  <button type="button" class="biu-btn" id="sub-italic" data-active="false" title="Italic"><i>I</i></button>
+                  <button type="button" class="biu-btn" id="sub-underline" data-active="false" title="Underline"><u>U</u></button>
+                </div>
               </div>
-              <div>
-                <label>Value font size</label>
+              <div class="font-style-row">
+                <label class="fsr-label">Value</label>
                 <div class="num-row">
                   <input type="number" id="value-font-size" min="8" max="48" step="1">
                   <span class="num-unit">px</span>
+                </div>
+                <div class="biu-row">
+                  <button type="button" class="biu-btn" id="value-bold"   data-active="false" title="Bold"><b>B</b></button>
+                  <button type="button" class="biu-btn" id="value-italic" data-active="false" title="Italic"><i>I</i></button>
+                  <button type="button" class="biu-btn" id="value-underline" data-active="false" title="Underline"><u>U</u></button>
                 </div>
               </div>
             </div>
@@ -203,6 +218,9 @@ class KindleDashboardPanel extends HTMLElement {
     root.querySelector("#label-font-size").value    = cfg.label_font_size  ?? 13;
     root.querySelector("#sub-font-size").value      = cfg.sub_font_size    ?? 10;
     root.querySelector("#value-font-size").value    = cfg.value_font_size  ?? 18;
+    _setBIU(root, "label",   !!cfg.label_bold,   !!cfg.label_italic,   !!cfg.label_underline);
+    _setBIU(root, "sub",     !!cfg.sub_bold,     !!cfg.sub_italic,     !!cfg.sub_underline);
+    _setBIU(root, "value",   !!cfg.value_bold,   !!cfg.value_italic,   !!cfg.value_underline);
 
 
     // Font select — build options with per-option font styling
@@ -302,6 +320,15 @@ class KindleDashboardPanel extends HTMLElement {
 
   // ── LISTENERS — wired once in _mount ────────────────────────────────────
 
+  _setBIU(root, prefix, bold, italic, underline) {
+    [["bold", bold], ["italic", italic], ["underline", underline]].forEach(([suf, val]) => {
+      const btn = root.querySelector(`#${prefix}-${suf}`);
+      if (!btn) return;
+      btn.dataset.active = val ? "true" : "false";
+      btn.classList.toggle("biu-on", val);
+    });
+  }
+
   _wireListeners() {
     const root = this.shadowRoot;
 
@@ -321,6 +348,14 @@ class KindleDashboardPanel extends HTMLElement {
       const btn = e.target.closest("button");
       if (!btn) return;
 
+      // BIU toggle buttons
+      if (btn.classList.contains("biu-btn")) {
+        const isOn = btn.dataset.active === "true";
+        btn.dataset.active = isOn ? "false" : "true";
+        btn.classList.toggle("biu-on", !isOn);
+        this._markDirty();
+        return;
+      }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
       if (btn.id === "save-btn")        { this._doSave();        return; }
       if (btn.id === "discard-btn")     { this._config = null; this._init(); return; }
@@ -367,6 +402,15 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.label_font_size  = parseInt(root.querySelector("#label-font-size")?.value)  || 13;
     cfg.sub_font_size    = parseInt(root.querySelector("#sub-font-size")?.value)    || 10;
     cfg.value_font_size  = parseInt(root.querySelector("#value-font-size")?.value)  || 18;
+    cfg.label_bold      = root.querySelector("#label-bold")?.dataset.active   === "true";
+    cfg.label_italic    = root.querySelector("#label-italic")?.dataset.active === "true";
+    cfg.label_underline = root.querySelector("#label-underline")?.dataset.active === "true";
+    cfg.sub_bold        = root.querySelector("#sub-bold")?.dataset.active     === "true";
+    cfg.sub_italic      = root.querySelector("#sub-italic")?.dataset.active   === "true";
+    cfg.sub_underline   = root.querySelector("#sub-underline")?.dataset.active === "true";
+    cfg.value_bold      = root.querySelector("#value-bold")?.dataset.active   === "true";
+    cfg.value_italic    = root.querySelector("#value-italic")?.dataset.active === "true";
+    cfg.value_underline = root.querySelector("#value-underline")?.dataset.active === "true";
 
 
     cfg.sections = [...root.querySelectorAll(".section-card")].map(card => {
@@ -544,6 +588,19 @@ class KindleDashboardPanel extends HTMLElement {
       color:var(--primary-text-color,#212121);font-size:13px;text-align:center}
     .num-row input[type=number]:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
     .num-unit{font-size:13px;color:var(--secondary-text-color,#888)}
+    .font-style-grid{display:flex;flex-direction:column;gap:6px}
+    .font-style-row{display:flex;align-items:center;gap:8px}
+    .fsr-label{font-size:11px;font-weight:500;text-transform:uppercase;
+      letter-spacing:.04em;color:var(--secondary-text-color,#727272);
+      width:60px;flex-shrink:0;margin-bottom:0}
+    .biu-row{display:flex;gap:3px;flex-shrink:0}
+    .biu-btn{width:26px;height:26px;border:1px solid var(--divider-color,#ccc);
+      border-radius:4px;background:var(--primary-background-color,#fff);
+      color:var(--primary-text-color);cursor:pointer;font-size:12px;
+      display:flex;align-items:center;justify-content:center;padding:0}
+    .biu-btn:hover{background:var(--secondary-background-color,#eee)}
+    .biu-btn.biu-on{background:var(--primary-color,#03a9f4);color:#fff;
+      border-color:var(--primary-color,#03a9f4)}
     /* sections */
     #sections-root{display:flex;flex-direction:column;gap:12px;margin-bottom:12px}
     .section-card{border:1px solid var(--divider-color,#ddd);border-radius:6px;overflow:hidden}

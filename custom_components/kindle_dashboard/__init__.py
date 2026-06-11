@@ -19,13 +19,22 @@ from .const import (
     DEFAULT_FONT,
     DEFAULT_HIDE_ENTITY_NAMES,
     DEFAULT_INLINE_UNITS,
+    DEFAULT_LABEL_BOLD,
+    DEFAULT_LABEL_FONT_SIZE,
+    DEFAULT_LABEL_ITALIC,
+    DEFAULT_LABEL_UNDERLINE,
     DEFAULT_PAGE_HEIGHT,
     DEFAULT_PAGE_WIDTH,
-    DEFAULT_LABEL_FONT_SIZE,
+    DEFAULT_SUB_BOLD,
+    DEFAULT_SUB_FONT_SIZE,
+    DEFAULT_SUB_ITALIC,
+    DEFAULT_SUB_UNDERLINE,
+    DEFAULT_VALUE_BOLD,
+    DEFAULT_VALUE_FONT_SIZE,
+    DEFAULT_VALUE_ITALIC,
+    DEFAULT_VALUE_UNDERLINE,
     DEFAULT_LOCATION_NAME,
     DEFAULT_SECTIONS,
-    DEFAULT_SUB_FONT_SIZE,
-    DEFAULT_VALUE_FONT_SIZE,
     DOMAIN,
 )
 from . import websocket_api
@@ -82,58 +91,49 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Migrate old config entries to the current schema without data loss.
-
-    Every time new top-level keys are added to the config, bump CONFIG_VERSION
-    in const.py and add a migration step here that fills in the new defaults.
-    Existing user data is always preserved.
-    """
     from .const import CONFIG_VERSION
-
-    _LOGGER.debug(
-        "Migrating Kindle Dashboard config from version %s to %s",
-        entry.version, CONFIG_VERSION,
-    )
-
-    data = {**entry.data}
+    _LOGGER.debug("Migrating Kindle Dashboard config from v%s to v%s",
+                  entry.version, CONFIG_VERSION)
+    data    = {**entry.data}
     options = {**entry.options}
-
-    # ── v1 → v2: added hide_entity_names, font, inline_units ─────────────
     if entry.version < 2:
         for store in (data, options):
             store.setdefault(CONF_FONT,             DEFAULT_FONT)
             store.setdefault(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
             store.setdefault(CONF_HIDE_ENTITY_NAMES,DEFAULT_HIDE_ENTITY_NAMES)
-            # Migrate old flat scenes/toggles/stats to new sections format
             if CONF_SECTIONS not in store and any(
                 k in store for k in ("scenes", "toggles", "stats")
             ):
                 store[CONF_SECTIONS] = DEFAULT_SECTIONS
             store.setdefault(CONF_SECTIONS, DEFAULT_SECTIONS)
-
     hass.config_entries.async_update_entry(
         entry, data=data, options=options, version=CONFIG_VERSION
     )
-    _LOGGER.info("Kindle Dashboard config migrated to version %s", CONFIG_VERSION)
     return True
 
 
 def _merged_config(entry: ConfigEntry) -> dict:
-    """Merge entry.data and entry.options, with options taking precedence.
-    Fill any missing keys with defaults so new options are always available
-    even on old config entries that haven't been through migration yet.
-    """
+    """Merge entry data + options over defaults so new keys always have a value."""
     base = {
-        CONF_LOCATION_NAME:      DEFAULT_LOCATION_NAME,
-        CONF_SECTIONS:           DEFAULT_SECTIONS,
-        CONF_FONT:               DEFAULT_FONT,
-        CONF_INLINE_UNITS:       DEFAULT_INLINE_UNITS,
-        CONF_HIDE_ENTITY_NAMES:  DEFAULT_HIDE_ENTITY_NAMES,
-        "page_height":           DEFAULT_PAGE_HEIGHT,
-        "page_width":            DEFAULT_PAGE_WIDTH,
-        "label_font_size":       DEFAULT_LABEL_FONT_SIZE,
-        "sub_font_size":         DEFAULT_SUB_FONT_SIZE,
-        "value_font_size":       DEFAULT_VALUE_FONT_SIZE,
+        CONF_LOCATION_NAME:     DEFAULT_LOCATION_NAME,
+        CONF_SECTIONS:          DEFAULT_SECTIONS,
+        CONF_FONT:              DEFAULT_FONT,
+        CONF_INLINE_UNITS:      DEFAULT_INLINE_UNITS,
+        CONF_HIDE_ENTITY_NAMES: DEFAULT_HIDE_ENTITY_NAMES,
+        "page_width":           DEFAULT_PAGE_WIDTH,
+        "page_height":          DEFAULT_PAGE_HEIGHT,
+        "label_font_size":      DEFAULT_LABEL_FONT_SIZE,
+        "label_bold":           DEFAULT_LABEL_BOLD,
+        "label_italic":         DEFAULT_LABEL_ITALIC,
+        "label_underline":      DEFAULT_LABEL_UNDERLINE,
+        "sub_font_size":        DEFAULT_SUB_FONT_SIZE,
+        "sub_bold":             DEFAULT_SUB_BOLD,
+        "sub_italic":           DEFAULT_SUB_ITALIC,
+        "sub_underline":        DEFAULT_SUB_UNDERLINE,
+        "value_font_size":      DEFAULT_VALUE_FONT_SIZE,
+        "value_bold":           DEFAULT_VALUE_BOLD,
+        "value_italic":         DEFAULT_VALUE_ITALIC,
+        "value_underline":      DEFAULT_VALUE_UNDERLINE,
     }
     base.update(entry.data)
     base.update(entry.options)
@@ -161,34 +161,52 @@ class KindleView(HomeAssistantView):
         if not entries:
             return Response(text="Kindle Dashboard integration is not set up.", status=503)
 
-        cfg              = _merged_config(entries[0])
-        location         = cfg.get(CONF_LOCATION_NAME,     DEFAULT_LOCATION_NAME)
-        sections         = cfg.get(CONF_SECTIONS,          DEFAULT_SECTIONS)
-        font             = cfg.get(CONF_FONT,              DEFAULT_FONT)
-        inline_units     = cfg.get(CONF_INLINE_UNITS,      DEFAULT_INLINE_UNITS)
+        cfg = _merged_config(entries[0])
+
+        location        = cfg.get(CONF_LOCATION_NAME,    DEFAULT_LOCATION_NAME)
+        sections        = cfg.get(CONF_SECTIONS,         DEFAULT_SECTIONS)
+        font            = cfg.get(CONF_FONT,             DEFAULT_FONT)
+        inline_units    = cfg.get(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
+        page_width      = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
+        page_height     = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
+        label_font_size = cfg.get("label_font_size",     DEFAULT_LABEL_FONT_SIZE)
+        label_bold      = cfg.get("label_bold",          DEFAULT_LABEL_BOLD)
+        label_italic    = cfg.get("label_italic",        DEFAULT_LABEL_ITALIC)
+        label_underline = cfg.get("label_underline",     DEFAULT_LABEL_UNDERLINE)
+        sub_font_size   = cfg.get("sub_font_size",       DEFAULT_SUB_FONT_SIZE)
+        sub_bold        = cfg.get("sub_bold",            DEFAULT_SUB_BOLD)
+        sub_italic      = cfg.get("sub_italic",          DEFAULT_SUB_ITALIC)
+        sub_underline   = cfg.get("sub_underline",       DEFAULT_SUB_UNDERLINE)
+        value_font_size = cfg.get("value_font_size",     DEFAULT_VALUE_FONT_SIZE)
+        value_bold      = cfg.get("value_bold",          DEFAULT_VALUE_BOLD)
+        value_italic    = cfg.get("value_italic",        DEFAULT_VALUE_ITALIC)
+        value_underline = cfg.get("value_underline",     DEFAULT_VALUE_UNDERLINE)
 
         template_path = os.path.join(os.path.dirname(__file__), "frontend", "kindle.html")
         with open(template_path, "r", encoding="utf-8") as f:
             html = f.read()
 
-        page_height      = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
-        page_width       = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
-        label_font_size  = cfg.get("label_font_size",  DEFAULT_LABEL_FONT_SIZE)
-        sub_font_size    = cfg.get("sub_font_size",    DEFAULT_SUB_FONT_SIZE)
-        value_font_size  = cfg.get("value_font_size",  DEFAULT_VALUE_FONT_SIZE)
-
         injected = (
-            f"const PAGE_HEIGHT     = {json.dumps(page_height)};\n"
-            f"const PAGE_WIDTH      = {json.dumps(page_width)};\n"
-            f"const HA_URL          = window.location.origin;\n"
-            f"const HA_TOKEN        = {json.dumps(token)};\n"
-            f"const LOCATION        = {json.dumps(location)};\n"
-            f"const SECTIONS        = {json.dumps(sections)};\n"
-            f"const BODY_FONT       = {json.dumps(font)};\n"
-            f"const INLINE_UNITS    = {json.dumps(inline_units)};\n"
-            f"const LABEL_FONT_SIZE = {json.dumps(label_font_size)};\n"
-            f"const SUB_FONT_SIZE   = {json.dumps(sub_font_size)};\n"
-            f"const VALUE_FONT_SIZE = {json.dumps(value_font_size)};\n"
+            f"const PAGE_WIDTH       = {json.dumps(page_width)};\n"
+            f"const HA_URL           = window.location.origin;\n"
+            f"const HA_TOKEN         = {json.dumps(token)};\n"
+            f"const LOCATION         = {json.dumps(location)};\n"
+            f"const SECTIONS         = {json.dumps(sections)};\n"
+            f"const BODY_FONT        = {json.dumps(font)};\n"
+            f"const INLINE_UNITS     = {json.dumps(inline_units)};\n"
+            f"const PAGE_HEIGHT      = {json.dumps(page_height)};\n"
+            f"const LABEL_FONT_SIZE  = {json.dumps(label_font_size)};\n"
+            f"const LABEL_BOLD       = {json.dumps(label_bold)};\n"
+            f"const LABEL_ITALIC     = {json.dumps(label_italic)};\n"
+            f"const LABEL_UNDERLINE  = {json.dumps(label_underline)};\n"
+            f"const SUB_FONT_SIZE    = {json.dumps(sub_font_size)};\n"
+            f"const SUB_BOLD         = {json.dumps(sub_bold)};\n"
+            f"const SUB_ITALIC       = {json.dumps(sub_italic)};\n"
+            f"const SUB_UNDERLINE    = {json.dumps(sub_underline)};\n"
+            f"const VALUE_FONT_SIZE  = {json.dumps(value_font_size)};\n"
+            f"const VALUE_BOLD       = {json.dumps(value_bold)};\n"
+            f"const VALUE_ITALIC     = {json.dumps(value_italic)};\n"
+            f"const VALUE_UNDERLINE  = {json.dumps(value_underline)};\n"
         )
         html = html.replace("/* __INJECTED_CONFIG__ */", injected)
         html = html.replace(

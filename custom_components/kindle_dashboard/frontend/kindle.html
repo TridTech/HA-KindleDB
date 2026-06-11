@@ -63,7 +63,8 @@
 
   /* ── SECTION LABEL ── */
   .section-label {
-    font-size: var(--sub-fs, 10px);
+    font-size: var(--sub-fs, 10px); font-weight: var(--sub-fw, normal);
+    font-style: var(--sub-fi, normal); text-decoration: var(--sub-td, none);
     letter-spacing: .18em; text-transform: uppercase;
     padding: 6px 12px 5px; background: #eee;
     border-bottom: 1px solid #bbb; border-top: 2px solid #000; color: #444;
@@ -85,28 +86,33 @@
     padding: 4px 6px; overflow: hidden; min-height: 0;
   }
   .sensor-tile .s-label {
-    font-size: var(--sub-fs, 9px);
+    font-size: var(--sub-fs, 9px); font-weight: var(--sub-fw, normal);
+    font-style: var(--sub-fi, normal); text-decoration: var(--sub-td, none);
     letter-spacing: .1em; text-transform: uppercase; color: #555;
     margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     line-height: 1.2; flex-shrink: 0;
   }
   .sensor-tile .s-value {
-    font-size: var(--value-fs, 18px); font-weight: bold; line-height: 1;
-    overflow: hidden; flex-shrink: 0;
+    font-size: var(--value-fs, 18px); font-weight: var(--value-fw, bold);
+    font-style: var(--value-fi, normal); text-decoration: var(--value-td, none);
+    line-height: 1; overflow: hidden; flex-shrink: 0;
   }
   /* inline-units: value and unit on same line */
   .sensor-tile .s-value-inline {
-    font-size: var(--value-fs, 18px); font-weight: bold; line-height: 1;
-    display: inline;
+    font-size: var(--value-fs, 18px); font-weight: var(--value-fw, bold);
+    font-style: var(--value-fi, normal); text-decoration: var(--value-td, none);
+    line-height: 1; display: inline;
   }
   .sensor-tile .s-unit-inline {
-    font-size: var(--sub-fs, 10px); font-weight: bold; color: #333;
-    display: inline; margin-left: 1px; line-height: 1;
+    font-size: var(--sub-fs, 10px); font-weight: var(--sub-fw, normal);
+    font-style: var(--sub-fi, normal); text-decoration: var(--sub-td, none);
+    color: #333; display: inline; margin-left: 1px; line-height: 1;
   }
   /* stacked unit */
   .sensor-tile .s-unit {
-    font-size: var(--sub-fs, 10px); font-weight: bold; color: #333;
-    margin-top: 0; line-height: 1.1; flex-shrink: 0; overflow: hidden;
+    font-size: var(--sub-fs, 10px); font-weight: var(--sub-fw, normal);
+    font-style: var(--sub-fi, normal); text-decoration: var(--sub-td, none);
+    color: #333; margin-top: 0; line-height: 1.1; flex-shrink: 0; overflow: hidden;
   }
 
   /* ── SCENES ── */
@@ -129,7 +135,8 @@
   }
   .scene-body { padding: 5px 10px 8px; }
   .scene-name {
-    font-size: var(--label-fs, 12px); font-weight: bold;
+    font-size: var(--label-fs, 12px); font-weight: var(--label-fw, bold);
+    font-style: var(--label-fi, normal); text-decoration: var(--label-td, none);
     letter-spacing: .04em; display: block;
   }
   .scene-desc {
@@ -164,11 +171,14 @@
   }
   .toggle-label {
     flex: 1; padding: 0 10px;
-    font-size: var(--label-fs, 13px); letter-spacing: .04em;
+    font-size: var(--label-fs, 13px); font-weight: var(--label-fw, normal);
+    font-style: var(--label-fi, normal); text-decoration: var(--label-td, none);
+    letter-spacing: .04em;
   }
   .toggle-label small {
-    display: block; font-size: var(--sub-fs, 10px); color: #666;
-    margin-top: 1px; letter-spacing: .05em;
+    display: block; font-size: var(--sub-fs, 10px); font-weight: var(--sub-fw, normal);
+    font-style: var(--sub-fi, normal); text-decoration: var(--sub-td, none);
+    color: #666; margin-top: 1px; letter-spacing: .05em;
   }
   .toggle-switch {
     width: 52px; height: 26px; border: 2px solid #000;
@@ -211,12 +221,30 @@
 document.body.style.fontFamily = (typeof BODY_FONT !== "undefined" && BODY_FONT) || "Georgia, serif";
 document.body.style.width     = ((typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600) + "px";
 document.body.style.minHeight = ((typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800) + "px";
-const _lfs = (typeof LABEL_FONT_SIZE !== "undefined" ? LABEL_FONT_SIZE : 13) + "px";
-const _sfs = (typeof SUB_FONT_SIZE   !== "undefined" ? SUB_FONT_SIZE   : 10) + "px";
-const _vfs = (typeof VALUE_FONT_SIZE !== "undefined" ? VALUE_FONT_SIZE : 18) + "px";
+const _lfs  = (typeof LABEL_FONT_SIZE !== "undefined" ? LABEL_FONT_SIZE : 13) + "px";
+const _sfs  = (typeof SUB_FONT_SIZE   !== "undefined" ? SUB_FONT_SIZE   : 10) + "px";
+const _vfs  = (typeof VALUE_FONT_SIZE !== "undefined" ? VALUE_FONT_SIZE : 18) + "px";
+const _lfw  = (typeof LABEL_BOLD      !== "undefined" && LABEL_BOLD)      ? "bold"         : "normal";
+const _lfi  = (typeof LABEL_ITALIC    !== "undefined" && LABEL_ITALIC)    ? "italic"       : "normal";
+const _lftd = (typeof LABEL_UNDERLINE !== "undefined" && LABEL_UNDERLINE) ? "underline"    : "none";
+const _sfw  = (typeof SUB_BOLD        !== "undefined" && SUB_BOLD)        ? "bold"         : "normal";
+const _sfi  = (typeof SUB_ITALIC      !== "undefined" && SUB_ITALIC)      ? "italic"       : "normal";
+const _sftd = (typeof SUB_UNDERLINE   !== "undefined" && SUB_UNDERLINE)   ? "underline"    : "none";
+const _vfw  = (typeof VALUE_BOLD      !== "undefined" && VALUE_BOLD)      ? "bold"         : "normal";
+const _vfi  = (typeof VALUE_ITALIC    !== "undefined" && VALUE_ITALIC)    ? "italic"       : "normal";
+const _vftd = (typeof VALUE_UNDERLINE !== "undefined" && VALUE_UNDERLINE) ? "underline"    : "none";
 document.documentElement.style.setProperty("--label-fs", _lfs);
 document.documentElement.style.setProperty("--sub-fs",   _sfs);
 document.documentElement.style.setProperty("--value-fs", _vfs);
+document.documentElement.style.setProperty("--label-fw", _lfw);
+document.documentElement.style.setProperty("--label-fi", _lfi);
+document.documentElement.style.setProperty("--label-td", _lftd);
+document.documentElement.style.setProperty("--sub-fw",   _sfw);
+document.documentElement.style.setProperty("--sub-fi",   _sfi);
+document.documentElement.style.setProperty("--sub-td",   _sftd);
+document.documentElement.style.setProperty("--value-fw", _vfw);
+document.documentElement.style.setProperty("--value-fi", _vfi);
+document.documentElement.style.setProperty("--value-td", _vftd);
 </script>
 
 <div id="status-bar">
