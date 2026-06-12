@@ -67,15 +67,56 @@ Click **Save** when done. Changes are live on the next Kindle page load (or tap 
 
 ---
 
-## Kindle URL
+## On Your Kindle (must be jailbroken):
 
-Point your Kindle's experimental browser at:
-
+1. Install [kindle-shortcut-browser](https://github.com/mitchellurgero/kindle-shortcut-browser)
+2. In the shortcut_browser.sh config section, make the following changes:
 ```
-http://<your-ha-ip>:8123/api/kindle_dashboard/kindle?token=YOUR_TOKEN
+GO_FULLSCREEN=true
+FULLSCREEN_SITE="http://<your-ha-ip>:8123/api/kindle_dashboard/kindle?token=YOUR_TOKEN"
+EXTRACHROMEARGS="--kiosk" # This resovled a few issues with controls sticking around
 ```
+3. Add the following code to the shortcut_browser.sh script.  This allows the dashboard to read the kindle battery level.
+```
+## Adding Battery function in from Claude ##
+BAT_FILE="/mnt/us/kbbat"
 
-The page auto-refreshes every 60 seconds. Bookmark it and optionally set it as the browser's start page.
+# ── Battery ───────────────────────────────────────────────────────────────
+BAT=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null | tr -d '[] ')
+[ -z "$BAT" ] && BAT=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -1)
+[ -z "$BAT" ] && BAT="?"
+printf '%s' "$BAT" > "$BAT_FILE"
+#echo "battery: $BAT" >> "$LOG"
+( while true; do
+    B=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null | tr -d '[] ')
+    [ -z "$B" ] && B=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -1)
+    [ -z "$B" ] && B="?"
+    printf '%s' "$B" > "$BAT_FILE"
+    sleep 30
+  done ) &
+BAT_PID=$!
+
+# ── Prevent sleep while dashboard is running ─────────────────────────────────
+lipc-set-prop -i com.lab126.powerd preventScreenSaver 1
+
+# ── Cleanup on exit: restore sleep ───────────────────────────────────────────
+# This runs when the script exits for any reason (Ctrl-C, kill, etc.)
+trap 'lipc-set-prop -i com.lab126.powerd preventScreenSaver 0; \
+      kill $BAT_PID $BAT_HTTP_PID $RELOAD_HTTP_PID $RELOAD_WATCH_PID 2>/dev/null' \
+     EXIT INT TERM
+
+# ── HTTP Server for serving battery value ── # 
+BAT_PORT=2024
+( while true; do
+    VAL=$(cat "$BAT_FILE" 2>/dev/null || echo "?")
+    BODY="${VAL}"
+    RESP="HTTP/1.0 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: ${#BODY}\r\nConnection: close\r\n\r\n${BODY}"
+    echo -e "$RESP" | nc -l -p $BAT_PORT
+  done ) &
+BAT_HTTP_PID=$!
+## End Battery Function from Claude ##
+```
+4. Eject the Kindle and launch the Shortcut Browser.  It will take a few seconds to launch, and then should show the dashboard.
 
 ---
 
