@@ -244,12 +244,23 @@ function kbTick(){
     timeStr = pad(d.getHours()) + ":" + pad(d.getMinutes());
   }
   document.getElementById("kb-time").innerHTML = timeStr;
-  try {
-    var x = new XMLHttpRequest();
-    x.open("GET", "file:///mnt/us/kbbat", false);
-    x.send();
-    document.getElementById("kb-bat").innerHTML = (x.responseText || "?").trim() + "%";
-  } catch(e) { document.getElementById("kb-bat").innerHTML = "?%"; }
+
+  /* Battery: fetched from the tiny nc HTTP server running on the Kindle.
+     file:// XHR is blocked by WebKit mixed-content rules when the page
+     is served over http://, so we use a localhost HTTP endpoint instead.
+     Port 2024 is served by the nc loop in shortcut_browser.sh. */
+  var xb = new XMLHttpRequest();
+  xb.open("GET", "http://localhost:2024/bat", true);
+  xb.timeout = 2000;
+  xb.onload = function() {
+    if (xb.status === 200) {
+      document.getElementById("kb-bat").innerHTML = xb.responseText.trim() + "%";
+    }
+  };
+  xb.onerror = xb.ontimeout = function() {
+    /* silent — keep last known value rather than flashing "?%" */
+  };
+  xb.send();
 }
 /* kbTick() called after formatTime is defined — see boot section */
 setInterval(kbTick, 10000);
