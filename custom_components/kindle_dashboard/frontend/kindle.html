@@ -269,9 +269,13 @@ function kbTick(){
    full hard reload so entity states and config are always fresh.      */
 var _lastReloadToken = null;
 function kbCheckReload() {
+  /* Poll the HA reload endpoint using the same token as the page URL.
+   When the counter changes (bumped from the panel), reload the page. */
+  var _token = (typeof HA_TOKEN !== "undefined") ? HA_TOKEN : "";
   var xr = new XMLHttpRequest();
-  xr.open("GET", "http://localhost:2025/reload", true);
-  xr.timeout = 1500;
+  xr.open("GET", HA_URL + "/api/kindle_dashboard/reload?token=" +
+          encodeURIComponent(_token), true);
+  xr.timeout = 3000;
   xr.onload = function() {
     if (xr.status !== 200) return;
     var token = xr.responseText.trim();
@@ -355,7 +359,7 @@ document.documentElement.style.setProperty("--value-td", _vftd);
   <span id="last-update">Last updated: —</span>
   <div class="footer-right">
     <span id="conn-status">connecting…</span>
-    <button id="refresh-btn" onclick="fetchAll()">↺ Refresh</button>
+    <button id="refresh-btn" onclick="doRefresh()">↺ Refresh</button>
   </div>
 </div>
 <div id="toast"></div>
@@ -400,6 +404,14 @@ function allEntityIds() {
     });
   });
   return [...ids];
+}
+
+function doRefresh() {
+  if (typeof HARD_REFRESH !== "undefined" && HARD_REFRESH) {
+    window.location.reload(true);
+  } else {
+    fetchAll();
+  }
 }
 
 async function fetchAll() {

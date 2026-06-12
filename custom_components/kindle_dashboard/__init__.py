@@ -24,6 +24,7 @@ from .const import (
     DEFAULT_LABEL_ITALIC,
     DEFAULT_LABEL_UNDERLINE,
     DEFAULT_PAGE_HEIGHT,
+    DEFAULT_HARD_REFRESH,
     DEFAULT_PAGE_SCALE,
     DEFAULT_PAGE_WIDTH,
     DEFAULT_SUB_BOLD,
@@ -54,6 +55,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry
+    hass.data[DOMAIN].setdefault("_reload_counter", 0)
 
     frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
     await hass.http.async_register_static_paths(
@@ -78,6 +80,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     websocket_api.async_setup(hass)
     hass.http.register_view(KindleView(hass))
+    hass.http.register_view(KindleReloadView(hass))
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
@@ -123,6 +126,7 @@ def _merged_config(entry: ConfigEntry) -> dict:
         CONF_HIDE_ENTITY_NAMES: DEFAULT_HIDE_ENTITY_NAMES,
         "page_width":           DEFAULT_PAGE_WIDTH,
         "page_height":          DEFAULT_PAGE_HEIGHT,
+        "hard_refresh":         DEFAULT_HARD_REFRESH,
         "page_scale":           DEFAULT_PAGE_SCALE,
         "label_font_size":      DEFAULT_LABEL_FONT_SIZE,
         "label_bold":           DEFAULT_LABEL_BOLD,
@@ -171,6 +175,7 @@ class KindleView(HomeAssistantView):
         inline_units    = cfg.get(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
         page_width      = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
         page_height     = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
+        hard_refresh    = cfg.get("hard_refresh",      DEFAULT_HARD_REFRESH)
         page_scale      = float(cfg.get("page_scale",     DEFAULT_PAGE_SCALE))
         label_font_size = cfg.get("label_font_size",     DEFAULT_LABEL_FONT_SIZE)
         label_bold      = cfg.get("label_bold",          DEFAULT_LABEL_BOLD)
@@ -198,6 +203,7 @@ class KindleView(HomeAssistantView):
             f"const BODY_FONT        = {json.dumps(font)};\n"
             f"const INLINE_UNITS     = {json.dumps(inline_units)};\n"
             f"const PAGE_HEIGHT      = {json.dumps(page_height)};\n"
+            f"const HARD_REFRESH     = {json.dumps(hard_refresh)};\n"
             f"const PAGE_SCALE       = {json.dumps(page_scale)};\n"
             f"const LABEL_FONT_SIZE  = {json.dumps(label_font_size)};\n"
             f"const LABEL_BOLD       = {json.dumps(label_bold)};\n"
@@ -218,6 +224,41 @@ class KindleView(HomeAssistantView):
             f"width={page_width}, initial-scale=1.0, maximum-scale=1.0"
         )
         return Response(text=html, content_type="text/html", charset="utf-8")
+
+
+def bump_reload_counter(hass) -> int:
+    """Increment the in-memory reload counter and return the new value."""
+    hass.data[DOMAIN]["_reload_counter"] = \
+        hass.data[DOMAIN].get("_reload_counter", 0) + 1
+    return hass.data[DOMAIN]["_reload_counter"]
+
+
+class KindleReloadView(HomeAssistantView):
+    """Serve the current reload counter at /api/kindle_dashboard/reload.
+
+    The Kindle page polls this endpoint; when the counter changes it
+    calls window.location.reload(true).
+    Requires ?token= for the same reason as KindleView.
+    """
+
+    url = "/api/kindle_dashboard/reload"
+    name = "api:kindle_dashboard:reload"
+    requires_auth = False
+
+    def __init__(self, hass) -> None:
+        self.hass = hass
+
+    async def get(self, request: Any) -> Any:
+        from aiohttp.web import Response
+        token = request.rel_url.query.get("token", "").strip()
+        if not token:
+            return Response(text="token required", status=401)
+        counter = self.hass.data.get(DOMAIN, {}).get("_reload_counter", 0)
+        return Response(
+            text=str(counter),
+            content_type="text/plain",
+            headers={"Access-Control-Allow-Origin": "*"},
+        )
 
 
 _NO_TOKEN_PAGE = """<!DOCTYPE html>

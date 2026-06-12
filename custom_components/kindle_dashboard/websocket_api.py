@@ -28,6 +28,7 @@ ALLOWED_KEYS = {
     "page_width",
     "page_height",
     "page_scale",
+    "hard_refresh",
     "label_font_size", "label_bold", "label_italic", "label_underline",
     "sub_font_size",   "sub_bold",   "sub_italic",   "sub_underline",
     "value_font_size", "value_bold", "value_italic", "value_underline",
@@ -39,6 +40,7 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_config)
     websocket_api.async_register_command(hass, ws_save_config)
     websocket_api.async_register_command(hass, ws_get_entities)
+    websocket_api.async_register_command(hass, ws_force_refresh)
 
 
 @websocket_api.websocket_command({"type": f"{DOMAIN}/get_config"})
@@ -87,6 +89,15 @@ async def ws_get_entities(hass, connection, msg):
             })
     entities.sort(key=lambda e: (e["domain"], e["name"].lower()))
     connection.send_result(msg["id"], {"entities": entities})
+
+
+@websocket_api.websocket_command({"type": f"{DOMAIN}/force_refresh"})
+@websocket_api.async_response
+async def ws_force_refresh(hass, connection, msg):
+    """Bump the reload counter so the Kindle page does a hard reload."""
+    from . import bump_reload_counter
+    new_val = bump_reload_counter(hass)
+    connection.send_result(msg["id"], {"counter": new_val})
 
 
 def _get_entry(hass: HomeAssistant) -> ConfigEntry | None:

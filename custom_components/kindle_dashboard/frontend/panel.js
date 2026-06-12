@@ -88,6 +88,12 @@ class KindleDashboardPanel extends HTMLElement {
               <label>Kindle Bookmark URL</label>
               <div class="kindle-url" id="token-url-display"></div>
             </div>
+            <div class="form-row">
+              <button id="btn-force-refresh" class="force-refresh-btn">
+                ↺ Force Kindle Refresh
+              </button>
+              <p class="hint" style="margin-top:4px" id="force-refresh-hint"></p>
+            </div>
           </div>
         </div>
 
@@ -131,6 +137,12 @@ class KindleDashboardPanel extends HTMLElement {
             <div class="form-row">
               <label>Font</label>
               <select id="font-select"></select>
+            </div>
+            <div class="form-row">
+              <label class="opt-row">
+                <input type="checkbox" id="hard-refresh">
+                <span>Hard refresh <em>(full page reload instead of entity update)</em></span>
+              </label>
             </div>
             <div class="font-style-grid">
               <div class="font-style-row">
@@ -221,6 +233,7 @@ class KindleDashboardPanel extends HTMLElement {
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
     // inline-units synced via _paintSections (in sensors sec header)
+    root.querySelector("#hard-refresh").checked = !!cfg.hard_refresh;
     root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
     root.querySelector("#page-height").value        = cfg.page_height ?? 800;
     const _scv = cfg.page_scale ?? 1.0;
@@ -377,6 +390,7 @@ class KindleDashboardPanel extends HTMLElement {
         this._markDirty();
         return;
       }
+      if (btn.id === "btn-force-refresh") { this._doForceRefresh(); return; }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
       if (btn.id === "save-btn")        { this._doSave();        return; }
       if (btn.id === "discard-btn")     { this._config = null; this._init(); return; }
@@ -415,6 +429,7 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.location_name    = root.querySelector("#location-name")?.value.trim() || "Home";
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
+    cfg.hard_refresh     = root.querySelector("#hard-refresh")?.checked        || false;
     // inline_units is read from the first sensors section header
     const inlineEl = root.querySelector(".sec-inlineunits");
     cfg.inline_units = inlineEl ? inlineEl.checked : (this._config?.inline_units || false);
@@ -461,6 +476,22 @@ class KindleDashboardPanel extends HTMLElement {
 
   // ── MUTATIONS ────────────────────────────────────────────────────────────
   // Pattern: collect → mutate cfg → store as this._config → syncToDOM
+
+  async _doForceRefresh() {
+    const hint = this.shadowRoot.querySelector("#force-refresh-hint");
+    const btn  = this.shadowRoot.querySelector("#btn-force-refresh");
+    if (!hint || !btn) return;
+    btn.disabled = true;
+    hint.textContent = "Sending…";
+    try {
+      const res = await this._hass.callWS({ type: "kindle_dashboard/force_refresh" });
+      hint.textContent = "✓ Kindle will reload within 5 seconds (counter: " + res.counter + ")";
+      setTimeout(() => { hint.textContent = ""; btn.disabled = false; }, 5000);
+    } catch(e) {
+      hint.textContent = "Error: " + e.message;
+      btn.disabled = false;
+    }
+  }
 
   _doAddSection() {
     const cfg  = this._collectConfig();
@@ -672,6 +703,13 @@ class KindleDashboardPanel extends HTMLElement {
       border-radius:4px;cursor:pointer;font-size:12px}
     .add-section-row{display:flex;gap:8px;align-items:center}
     .add-section-row select{flex:1}
+    .force-refresh-btn{
+      width:100%;padding:8px;border:2px solid var(--primary-color,#03a9f4);
+      background:var(--primary-color,#03a9f4);color:#fff;
+      border-radius:4px;cursor:pointer;font-size:14px;font-weight:500;
+      letter-spacing:.02em}
+    .force-refresh-btn:hover{opacity:.9}
+    .force-refresh-btn:disabled{opacity:.5;cursor:default}
     .add-btn{background:none;border:1px solid var(--primary-color,#03a9f4);
       color:var(--primary-color,#03a9f4);padding:7px 14px;border-radius:4px;
       cursor:pointer;font-size:13px;white-space:nowrap}
