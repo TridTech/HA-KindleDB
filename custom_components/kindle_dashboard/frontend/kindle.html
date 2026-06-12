@@ -30,37 +30,30 @@
   }
 
   /* ── STATUS BAR — compact, same height as footer ── */
-  #status-bar {
-    background: #000; color: #fff;
-    padding: 5px 12px;
-    display: flex; justify-content: space-between; align-items: center;
-    font-family: 'Courier New', monospace; font-size: 11px; letter-spacing: .04em;
-    border-bottom: 2px solid #000;
+  /* ── INFO BAR: home name left, lights status right ── */
+  #info-bar {
+    background: #f0f0f0; border-bottom: 3px solid #000;
+    padding: 6px 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
   }
-  #status-bar .loc {
-    font-size: 20px; font-weight: bold; letter-spacing: .1em;
-    line-height: 1;
+  #info-bar .loc {
+    font-size: 20px; font-weight: bold; letter-spacing: .1em; line-height: 1;
+    flex-shrink: 0;
   }
-  #status-bar .right {
-    text-align: right; line-height: 1.4; font-size: 11px;
+  #info-bar .lights-right {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
   }
-
-  /* ── LIGHT STATUS SUMMARY ── */
-  #lights-summary {
-    border-bottom: 3px solid #000;
-    padding: 7px 12px;
-    display: flex; align-items: center; gap: 10px; background: #f0f0f0;
-  }
-  #lights-summary .dot-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .dot-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
   .light-dot {
     width: 12px; height: 12px; border-radius: 50%;
     border: 2px solid #000; background: #fff; display: inline-block; flex-shrink: 0;
   }
   .light-dot.on { background: #000; }
-  #lights-summary .summary-text {
-    font-size: 11px; flex: 1; line-height: 1.4;
+  .lights-count-text {
+    font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.3;
+    text-align: right;
   }
-  #lights-summary .summary-text strong { font-size: 13px; display: block; }
+  .lights-count-text strong { font-size: 12px; display: block; }
 
   /* ── SECTION LABEL ── */
   .section-label {
@@ -202,6 +195,9 @@
     font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: .06em;
     flex-shrink: 0;
   }
+  #footer .footer-right { display: flex; align-items: center; gap: 8px; }
+  #conn-status { font-family: 'Courier New', monospace; font-size: 10px;
+                 color: #666; letter-spacing: .06em; }
   #refresh-btn {
     border: 1px solid #999; background: #fff; padding: 3px 9px;
     font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: .06em; cursor: pointer;
@@ -299,20 +295,15 @@ document.documentElement.style.setProperty("--value-fi", _vfi);
 document.documentElement.style.setProperty("--value-td", _vftd);
 </script>
 
-<div id="status-bar">
+<!-- Combined info bar: home name left, lights status right -->
+<div id="info-bar">
   <span class="loc" id="loc-name">HOME</span>
-  <div class="right">
-    <span id="clock">--:--</span><br>
-    <span id="conn-status">connecting…</span>
-  </div>
-</div>
-
-<!-- Light status strip — only shown when there are light-type toggles -->
-<div id="lights-summary" style="display:none">
-  <div class="dot-row" id="light-dots"></div>
-  <div class="summary-text">
-    <strong id="lights-on-count">—</strong>
-    <span id="lights-on-names" style="color:#666"></span>
+  <div class="lights-right" id="lights-right" style="display:none">
+    <div class="dot-row" id="light-dots"></div>
+    <div class="lights-count-text">
+      <strong id="lights-on-count">—</strong>
+      <span id="lights-on-names" style="color:#666"></span>
+    </div>
   </div>
 </div>
 
@@ -321,7 +312,10 @@ document.documentElement.style.setProperty("--value-td", _vftd);
 
 <div id="footer">
   <span id="last-update">Last updated: —</span>
-  <button id="refresh-btn" onclick="fetchAll()">↺ Refresh</button>
+  <div class="footer-right">
+    <span id="conn-status">connecting…</span>
+    <button id="refresh-btn" onclick="fetchAll()">↺ Refresh</button>
+  </div>
 </div>
 <div id="toast"></div>
 
@@ -368,7 +362,7 @@ function allEntityIds() {
 }
 
 async function fetchAll() {
-  document.getElementById("conn-status").textContent = "loading…";
+  /* conn-status updated after fetch completes */
   const ids = allEntityIds();
   const results = await Promise.all(ids.map(fetchState));
   let anyFail = false;
@@ -392,7 +386,7 @@ function buildLightSummary() {
         .forEach(i => lights.push(i));
     }
   });
-  const strip = document.getElementById("lights-summary");
+  const strip = document.getElementById("lights-right");
   if (!lights.length) { strip.style.display = "none"; return; }
   strip.style.display = "flex";
   const container = document.getElementById("light-dots");
@@ -580,9 +574,8 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-function updateClock() {
-  document.getElementById("clock").textContent = formatTime(new Date());
-}
+/* clock removed from header — time shown in kb-bar */
+function updateClock() {}  /* no-op kept so setInterval doesn't error */
 
 function toast(msg) {
   const el = document.getElementById("toast");
