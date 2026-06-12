@@ -41,18 +41,24 @@ class KindleDashboardPanel extends HTMLElement {
     this._hass     = null;
     this._config   = null;
     this._entities = [];
-    this._mounted  = false;
+    this._mounted      = false;
+    this._initializing = false;
   }
 
   set hass(hass) {
     this._hass = hass;
-    if (!this._config) this._init();
+    if (!this._config && !this._initializing) this._init();
   }
   set panel(p) {}
 
   async _init() {
-    await Promise.all([this._loadConfig(), this._loadEntities()]);
-    this._mount();
+    this._initializing = true;
+    try {
+      await Promise.all([this._loadConfig(), this._loadEntities()]);
+      this._mount();
+    } finally {
+      this._initializing = false;
+    }
   }
 
   async _loadConfig() {
@@ -426,7 +432,15 @@ class KindleDashboardPanel extends HTMLElement {
       if (btn.id === "btn-force-refresh") { this._doForceRefresh(); return; }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
       if (btn.id === "save-btn")        { this._doSave();        return; }
-      if (btn.id === "discard-btn")     { this._config = null; this._init(); return; }
+      if (btn.id === "discard-btn") {
+        this._config = null;
+        this._loadConfig().then(() => {
+          this._syncToDOM();
+          this._paintSections();
+          this.shadowRoot.querySelector("#save-bar")?.classList.remove("visible");
+        });
+        return;
+      }
 
       const card = btn.closest(".section-card");
       if (!card) return;
