@@ -111,6 +111,22 @@ class KindleDashboardPanel extends HTMLElement {
         </div>
 
         <div class="card">
+          <div class="card-header"><span class="icon">💾</span> Configuration Backup</div>
+          <div class="card-body">
+            <p class="hint">Export your full dashboard configuration to a JSON file, or import a previously saved one. Importing loads the config into the editor — review it and hit Save to apply.</p>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <button id="btn-export" class="backup-btn">⬇ Export Config</button>
+              <label class="backup-btn backup-import-label" title="Import a config JSON file">
+                ⬆ Import Config
+                <input type="file" id="import-file" accept=".json,application/json"
+                       style="display:none">
+              </label>
+              <span id="import-status" style="font-size:12px;color:var(--secondary-text-color,#888)"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card-header"><span class="icon">📐</span> Page Dimensions</div>
           <div class="card-body">
             <div class="form-row two-col">
@@ -417,6 +433,12 @@ class KindleDashboardPanel extends HTMLElement {
       }
     });
 
+    // Import file picker
+    root.querySelector("#import-file")?.addEventListener("change", (e) => {
+      this._doImport(e.target.files[0]);
+      e.target.value = "";  // reset so same file can be re-imported
+    });
+
     // Delegated click handler
     root.addEventListener("click", (e) => {
       const btn = e.target.closest("button");
@@ -431,6 +453,7 @@ class KindleDashboardPanel extends HTMLElement {
         return;
       }
       if (btn.id === "btn-force-refresh") { this._doForceRefresh(); return; }
+      if (btn.id === "btn-export")         { this._doExport();       return; }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
       if (btn.id === "save-btn")        { this._doSave();        return; }
       if (btn.id === "discard-btn") {
@@ -615,6 +638,47 @@ class KindleDashboardPanel extends HTMLElement {
 
   // ── SAVE ────────────────────────────────────────────────────────────────
 
+  _doExport() {
+    const cfg  = this._collectConfig();
+    const name = (cfg.location_name || "kindle-dashboard").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const ts   = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([JSON.stringify(cfg, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `${name}-config-${ts}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  _doImport(file) {
+    if (!file) return;
+    const status = this.shadowRoot.querySelector("#import-status");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        // Basic sanity check — must have at least one recognisable key
+        if (typeof imported !== "object" || imported === null ||
+            (!imported.sections && !imported.location_name && !imported.font)) {
+          if (status) status.textContent = "✕ Not a valid Kindle Dashboard config file";
+          return;
+        }
+        this._config = imported;
+        this._syncToDOM();
+        this._paintSections();
+        this._markDirty();
+        if (status) {
+          status.textContent = "✓ Config loaded — review and hit Save to apply";
+          setTimeout(() => { status.textContent = ""; }, 5000);
+        }
+      } catch(err) {
+        if (status) status.textContent = "✕ Could not parse JSON: " + err.message;
+      }
+    };
+    reader.readAsText(file);
+  }
+
   async _doSave() {
     const cfg = this._collectConfig();
     // Strip items with no entity before persisting
@@ -763,6 +827,12 @@ class KindleDashboardPanel extends HTMLElement {
       border-radius:4px;cursor:pointer;font-size:12px}
     .add-section-row{display:flex;gap:8px;align-items:center}
     .add-section-row select{flex:1}
+    .backup-btn{background:none;border:1px solid var(--primary-color,#03a9f4);
+      color:var(--primary-color,#03a9f4);padding:7px 16px;border-radius:4px;
+      cursor:pointer;font-size:13px;white-space:nowrap;display:inline-flex;
+      align-items:center;gap:6px}
+    .backup-btn:hover{background:rgba(3,169,244,.06)}
+    .backup-import-label{cursor:pointer;user-select:none}
     .force-refresh-btn{
       width:100%;padding:8px;border:2px solid var(--primary-color,#03a9f4);
       background:var(--primary-color,#03a9f4);color:#fff;
