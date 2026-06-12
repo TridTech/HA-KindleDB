@@ -41,8 +41,10 @@
     flex-shrink: 0;
   }
   #info-bar .lights-right {
-    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    display: flex; align-items: center; flex-shrink: 0;
   }
+  #info-bar .lights-count-text { margin-right: 8px; }
+  #info-bar .dot-row { margin-left: 2px; }
   .dot-row { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
   .light-dot {
     width: 12px; height: 12px; border-radius: 50%;
@@ -195,12 +197,13 @@
     font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: .06em;
     flex-shrink: 0;
   }
-  #footer .footer-right { display: flex; align-items: center; gap: 8px; }
+  #footer .footer-right { display: flex; align-items: center; }
   #conn-status { font-family: 'Courier New', monospace; font-size: 10px;
                  color: #666; letter-spacing: .06em; }
   #refresh-btn {
     border: 1px solid #999; background: #fff; padding: 3px 9px;
     font-family: 'Courier New', monospace; font-size: 10px; letter-spacing: .06em; cursor: pointer;
+    margin-left: 10px;
   }
   #refresh-btn:active { background: #000; color: #fff; }
 
@@ -299,11 +302,11 @@ document.documentElement.style.setProperty("--value-td", _vftd);
 <div id="info-bar">
   <span class="loc" id="loc-name">HOME</span>
   <div class="lights-right" id="lights-right" style="display:none">
-    <div class="dot-row" id="light-dots"></div>
     <div class="lights-count-text">
       <strong id="lights-on-count">—</strong>
       <span id="lights-on-names" style="color:#666"></span>
     </div>
+    <div class="dot-row" id="light-dots"></div>
   </div>
 </div>
 
