@@ -63,6 +63,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = entry
     hass.data[DOMAIN].setdefault("_reload_counters", {})
     hass.data[DOMAIN]["_reload_counters"].setdefault(entry.entry_id, 0)
+    hass.data[DOMAIN].setdefault("_heartbeats", {})
+    hass.data[DOMAIN]["_heartbeats"].setdefault(entry.entry_id, {})
 
     # Register static files and panel only once (first entry)
     if not hass.data[DOMAIN].get("_panel_registered"):
@@ -280,9 +282,20 @@ class KindleReloadView(HomeAssistantView):
 
     async def get(self, request: Any, entry_id: str) -> Any:
         from aiohttp.web import Response
+        import time
         token = request.rel_url.query.get("token", "").strip()
         if not token:
             return Response(text="token required", status=401)
+        # Record heartbeat — use last 8 chars of token as client key
+        client_key = token[-8:] if len(token) >= 8 else token
+        beats = self.hass.data.get(DOMAIN, {}).get("_heartbeats", {})
+        beats.setdefault(entry_id, {})[client_key] = time.time()
+        # Prune clients not seen in 30 seconds
+        now = time.time()
+        beats[entry_id] = {
+            k: v for k, v in beats.get(entry_id, {}).items()
+            if now - v < 30
+        }
         counter = self.hass.data.get(DOMAIN, {}).get(
             "_reload_counters", {}
         ).get(entry_id, 0)

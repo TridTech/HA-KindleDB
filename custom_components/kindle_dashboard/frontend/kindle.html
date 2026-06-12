@@ -200,6 +200,10 @@
     font-family: 'Courier New', monospace; font-size: 10px; color: #666; letter-spacing: .06em;
     flex-shrink: 0;
   }
+  #device-label {
+    font-family: 'Courier New', monospace; font-size: 10px;
+    color: #888; letter-spacing: .06em;
+  }
   #footer .footer-right { display: flex; align-items: center; }
   #conn-status { font-family: 'Courier New', monospace; font-size: 10px;
                  color: #666; letter-spacing: .06em; }
@@ -446,7 +450,12 @@ function kbPushBattery(pct) {
   /* Derive a stable entity ID from the location name */
   var loc = (typeof LOCATION !== "undefined" ? LOCATION : "kindle")
     .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-  var entityId = "sensor." + loc + "_battery";
+  /* Device name from URL ?device= param — makes entity ID unique per device */
+  var deviceName = (new URLSearchParams(window.location.search).get("device") || "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  var entityId = deviceName
+    ? "sensor." + loc + "_battery_" + deviceName
+    : "sensor." + loc + "_battery";
 
   var icon = level >= 90 ? "mdi:battery"
            : level >= 80 ? "mdi:battery-90"
@@ -464,7 +473,7 @@ function kbPushBattery(pct) {
     attributes: {
       unit_of_measurement: "%",
       device_class: "battery",
-      friendly_name: (typeof LOCATION !== "undefined" ? LOCATION : "Kindle") + " Battery",
+      friendly_name: (typeof LOCATION !== "undefined" ? LOCATION : "Kindle") + (deviceName ? " Battery (" + deviceName + ")" : " Battery"),
       icon: icon,
     }
   });
@@ -533,6 +542,12 @@ if (_showClock)   document.getElementById("kb-time").style.display = "block";
 if (_showBattery) document.getElementById("kb-bat").style.display  = "block";
 // Apply theme class to body
 document.body.className = (typeof THEME !== "undefined" && THEME) ? "theme-" + THEME : "theme-sharp";
+// Show device name in footer if set
+(function() {
+  var _dn = new URLSearchParams(window.location.search).get("device") || "";
+  var _el = document.getElementById("device-label");
+  if (_el && _dn) _el.textContent = _dn;
+})();
 const _pw = (typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600;
 const _ph = (typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800;
 const _sc = (typeof PAGE_SCALE  !== "undefined" && PAGE_SCALE)  || 1.0;
@@ -584,6 +599,7 @@ document.documentElement.style.setProperty("--value-td", _vftd);
 <div id="sections-root"></div>
 
 <div id="footer">
+  <span id="device-label"></span>
   <span id="last-update">Last updated: —</span>
   <div class="footer-right">
     <span id="conn-status">connecting…</span>

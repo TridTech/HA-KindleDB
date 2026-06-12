@@ -117,10 +117,12 @@ Click **Save** (floating button, bottom-right) when done. Use **↺ Force Refres
 2. In `shortcut_browser.sh`, update the config section:
 ```sh
 GO_FULLSCREEN=true
-FULLSCREEN_SITE="http://<your-ha-ip>:8123/api/kindle_dashboard/kindle/<entry_id>?token=YOUR_TOKEN"
+FULLSCREEN_SITE="http://<your-ha-ip>:8123/api/kindle_dashboard/kindle/<entry_id>?token=YOUR_TOKEN&device=bedroom-kindle"
 EXTRACHROMEARGS="--kiosk"
 ```
 > The full URL including `<entry_id>` is shown in the **Kindle URL** card in the panel.
+>
+> The `device=` parameter is optional but **required for per-device battery tracking** when multiple Kindles share a dashboard. Set it to any short identifier with no spaces (e.g. `bedroom-kindle`, `kitchen`). Each device will create its own sensor entity in HA (`sensor.home_battery_bedroom_kindle`) and appear individually in the panel top bar. If omitted, all devices write to the same `sensor.home_battery` entity.
 
 3. Add the following to `shortcut_browser.sh` to enable the battery display and prevent sleep:
 ```sh

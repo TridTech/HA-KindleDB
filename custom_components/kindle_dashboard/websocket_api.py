@@ -25,6 +25,7 @@ ALLOWED_KEYS = {
     CONF_INLINE_UNITS,
     CONF_HIDE_ENTITY_NAMES,
     "kindle_token",
+    "devices",
     "page_width", "page_height", "page_scale",
     "hard_refresh", "refresh_interval", "show_clock", "show_battery", "theme",
     "label_font_size", "label_bold", "label_italic", "label_underline",
@@ -59,6 +60,10 @@ async def ws_get_dashboards(hass, connection, msg):
             "title":        e.title,
             "location_name": cfg.get(CONF_LOCATION_NAME, "Home"),
         })
+    # Attach active device counts from heartbeat data
+    beats = hass.data.get(DOMAIN, {}).get("_heartbeats", {})
+    for d in dashboards:
+        d["active_devices"] = len(beats.get(d["entry_id"], {}))
     connection.send_result(msg["id"], {"dashboards": dashboards})
 
 

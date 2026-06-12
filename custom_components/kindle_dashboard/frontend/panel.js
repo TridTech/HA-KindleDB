@@ -49,6 +49,7 @@ class KindleDashboardPanel extends HTMLElement {
   set hass(hass) {
     this._hass = hass;
     if (!this._config && !this._initializing) this._init();
+    else if (this._mounted) this._refreshTopbar();
   }
   set panel(p) {}
 
@@ -60,6 +61,33 @@ class KindleDashboardPanel extends HTMLElement {
       this._mount();
     } finally {
       this._initializing = false;
+    }
+  }
+
+  _refreshTopbar() {
+    if (!this._config || !this._mounted) return;
+    const root = this.shadowRoot;
+    const cfg  = this._config || {};
+    // Battery
+    const loc = (cfg.location_name || "kindle")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const batPrefix2 = "sensor." + loc + "_battery_";
+    const batLevels = Object.entries(this._hass?.states || {})
+      .filter(([id]) => id.startsWith(batPrefix2))
+      .map(([, s]) => parseInt(s.state, 10))
+      .filter(n => !isNaN(n)).sort((a, b) => a - b);
+    const batEl = root.querySelector("#topbar-battery");
+    if (batEl) {
+      if (batLevels.length === 0) { batEl.textContent = ""; }
+      else if (batLevels.length === 1) { batEl.textContent = "🔋 " + batLevels[0] + "%"; }
+      else { batEl.textContent = "🔋 " + batLevels[0] + "% / " + batLevels[batLevels.length-1] + "%"; }
+    }
+    // Device count — also refresh dashboard list occasionally
+    const dash = (this._dashboards || []).find(d => d.entry_id === this._activeEntryId);
+    const n = dash?.active_devices ?? 0;
+    const devEl = root.querySelector("#topbar-devices");
+    if (devEl) {
+      devEl.textContent = n > 0 ? "📱 " + n + (n === 1 ? " device" : " devices") : "";
     }
   }
 
@@ -98,6 +126,8 @@ class KindleDashboardPanel extends HTMLElement {
       <div class="top-bar">
         <h1>📱 Kindle Dashboard</h1>
         <select id="dashboard-picker" class="dash-picker"></select>
+        <span id="topbar-devices" class="topbar-info" title="Active devices on this dashboard"></span>
+        <span id="topbar-battery" class="topbar-info" title="Kindle battery level"></span>
         <button id="btn-force-refresh" class="topbar-btn">↺ Force Refresh</button>
         <span id="topbar-link"></span>
       </div>
@@ -110,18 +140,20 @@ class KindleDashboardPanel extends HTMLElement {
         <div class="card" id="card-url">
           <div class="card-header"><span class="icon">🔗</span> Kindle URL</div>
           <div class="card-body">
-            <p class="hint">Generate a Long-Lived Access Token in your HA profile, paste it below, then bookmark the URL on your Kindle.</p>
+            <p class="hint">Paste your Long-Lived Access Token below, then add a device for each Kindle you want to use with this dashboard.</p>
             <div class="form-row">
               <label>Long-Lived Access Token</label>
               <input type="text" id="kindle-token" placeholder="Paste token here…"
                      style="font-family:monospace;font-size:12px">
             </div>
             <div class="form-row">
-              <label>Kindle Bookmark URL</label>
-              <div style="display:flex;gap:6px;align-items:stretch">
-                <div class="kindle-url" id="token-url-display" style="flex:1"></div>
-                <button id="btn-copy-url" class="backup-btn" title="Copy URL">⎘ Copy</button>
-              </div>
+              <label>Devices
+                <em style="text-transform:none;font-weight:400;letter-spacing:0;margin-left:4px">
+                  — add one per Kindle; device name is used for battery tracking
+                </em>
+              </label>
+              <div id="device-list" class="device-list"></div>
+              <button id="btn-add-device" class="add-btn" style="margin-top:6px">+ Add Device</button>
             </div>
             <p id="force-refresh-hint" class="hint"></p>
           </div>
@@ -310,17 +342,45 @@ class KindleDashboardPanel extends HTMLElement {
     root.querySelector("#dashboard-name") &&
       (root.querySelector("#dashboard-name").value = cfg.dashboard_name || "");
     const token    = cfg.kindle_token || "";
-    const tokenUrl = (token && this._activeEntryId)
-      ? `${window.location.origin}/api/kindle_dashboard/kindle/${this._activeEntryId}?token=${encodeURIComponent(token)}`
-      : "";
+    const tokenUrl = this._buildTokenUrl(root, cfg);
     root.querySelector("#kindle-token").value = token;
-    const urlEl = root.querySelector("#token-url-display");
-    urlEl.innerHTML = tokenUrl
-      ? `<a href="${this._esc(tokenUrl)}" target="_blank">${this._esc(tokenUrl)}</a>`
-      : `<span class="muted">Paste a token above and save to generate the URL</span>`;
+    this._renderDeviceList(root, cfg, tokenUrl);
     const topLink = root.querySelector("#topbar-link");
     topLink.innerHTML = tokenUrl
       ? `<a href="${this._esc(tokenUrl)}" target="_blank">Preview ↗</a>` : "";
+
+    // Battery: find all sensor.<loc>_battery_* entities for this location
+    const loc = (cfg.location_name || "kindle")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    const batPrefix = "sensor." + loc + "_battery_";
+    const batStates = Object.entries(this._hass?.states || {})
+      .filter(([id]) => id.startsWith(batPrefix))
+      .map(([, s]) => parseInt(s.state, 10))
+      .filter(n => !isNaN(n))
+      .sort((a, b) => a - b);
+    const batEl = root.querySelector("#topbar-battery");
+    if (batEl) {
+      if (batStates.length === 0) {
+        batEl.textContent = "";
+      } else if (batStates.length === 1) {
+        batEl.textContent = "🔋 " + batStates[0] + "%";
+      } else {
+        // Multiple devices: show lowest (most critical) with count
+        batEl.textContent = "🔋 " + batStates[0] + "% / " + batStates[batStates.length-1] + "%";
+        batEl.title = batStates.length + " devices: " + batStates.join("%, ") + "%";
+      }
+    }
+
+    // Active device count from heartbeat data (via _dashboards)
+    const devEl = root.querySelector("#topbar-devices");
+    if (devEl) {
+      const dash = (this._dashboards || []).find(d => d.entry_id === this._activeEntryId);
+      const n = dash?.active_devices ?? 0;
+      devEl.textContent = n > 0 ? "📱 " + n + (n === 1 ? " device" : " devices") : "";
+      devEl.title = n > 0
+        ? n + " Kindle" + (n === 1 ? "" : "s") + " currently viewing this dashboard"
+        : "No active devices";
+    }
 
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
@@ -444,6 +504,50 @@ class KindleDashboardPanel extends HTMLElement {
 
   // ── LISTENERS — wired once in _mount ────────────────────────────────────
 
+  _buildTokenUrl(root, cfg) {
+    const token = cfg?.kindle_token || root?.querySelector("#kindle-token")?.value.trim() || "";
+    return (token && this._activeEntryId)
+      ? `${window.location.origin}/api/kindle_dashboard/kindle/${this._activeEntryId}?token=${encodeURIComponent(token)}`
+      : "";
+  }
+
+  _renderDeviceList(root, cfg, baseUrl) {
+    const list    = root.querySelector("#device-list");
+    if (!list) return;
+    const devices = cfg.devices || [];
+    if (devices.length === 0) {
+      list.innerHTML = `<p class="hint" style="margin:4px 0">No devices added yet. Click + Add Device to create a URL for each Kindle.</p>`;
+      return;
+    }
+    list.innerHTML = devices.map((name, i) => {
+      const devUrl = baseUrl
+        ? baseUrl + (name ? "&device=" + encodeURIComponent(name) : "")
+        : "";
+      return `
+        <div class="device-row" data-idx="${i}">
+          <input class="device-name-input" type="text"
+                 placeholder="e.g. bedroom-kindle" value="${this._esc(name)}">
+          <div class="kindle-url device-url">${this._esc(devUrl)}</div>
+          <button class="btn-copy-device-url backup-btn"
+                  data-url="${this._esc(devUrl)}" title="Copy URL">⎘</button>
+          <button class="btn-remove-device" data-idx="${i}" title="Remove device">✕</button>
+        </div>`;
+    }).join("");
+    /* Re-wire device name inputs to update URLs live */
+    list.querySelectorAll(".device-name-input").forEach((el, i) => {
+      el.addEventListener("input", () => {
+        this._markDirty();
+        const name = el.value.trim();
+        const row  = el.closest(".device-row");
+        const devUrl = baseUrl
+          ? baseUrl + (name ? "&device=" + encodeURIComponent(name) : "")
+          : "";
+        row.querySelector(".device-url").textContent   = devUrl;
+        row.querySelector(".btn-copy-device-url").dataset.url = devUrl;
+      });
+    });
+  }
+
   _setBIU(root, prefix, bold, italic, underline) {
     [["bold", bold], ["italic", italic], ["underline", underline]].forEach(([suf, val]) => {
       const btn = root.querySelector(`#${prefix}-${suf}`);
@@ -458,6 +562,11 @@ class KindleDashboardPanel extends HTMLElement {
     const root = this.shadowRoot;
 
     // Any input/change → mark dirty; font select also updates preview
+    // Refresh device count every 10 seconds
+    setInterval(() => {
+      this._loadDashboards().then(() => this._refreshTopbar());
+    }, 10000);
+
     root.addEventListener("input", (e) => {
       this._markDirty();
       if (e.target.id === "page-scale") {
@@ -516,6 +625,32 @@ class KindleDashboardPanel extends HTMLElement {
         else { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); this._toast("✓ URL copied"); }
         return;
       }
+      if (btn.id === "btn-add-device") {
+        const cfg = this._collectConfig();
+        cfg.devices = [...(cfg.devices || []), ""];
+        this._config = cfg; this._markDirty();
+        const tokenUrl = this._buildTokenUrl(root, cfg);
+        this._renderDeviceList(root, cfg, tokenUrl);
+        root.querySelectorAll(".device-name-input")
+          [cfg.devices.length - 1]?.focus();
+        return;
+      }
+      if (btn.classList.contains("btn-remove-device")) {
+        const idx = parseInt(btn.dataset.idx, 10);
+        const cfg = this._collectConfig();
+        cfg.devices.splice(idx, 1);
+        this._config = cfg; this._markDirty();
+        const tokenUrl = this._buildTokenUrl(root, cfg);
+        this._renderDeviceList(root, cfg, tokenUrl);
+        return;
+      }
+      if (btn.classList.contains("btn-copy-device-url")) {
+        const url = btn.dataset.url;
+        if (!url) return;
+        if (navigator.clipboard) { navigator.clipboard.writeText(url).then(() => this._toast("✓ URL copied")); }
+        else { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); this._toast("✓ URL copied"); }
+        return;
+      }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
       if (btn.id === "save-btn")        { this._doSave();        return; }
       if (btn.id === "discard-btn") {
@@ -561,7 +696,9 @@ class KindleDashboardPanel extends HTMLElement {
 
     cfg.dashboard_name   = root.querySelector("#dashboard-name")?.value.trim() || "Kindle Dashboard";
     cfg.location_name    = root.querySelector("#location-name")?.value.trim() || "Home";
-    cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
+    cfg.kindle_token = root.querySelector("#kindle-token")?.value.trim() || "";
+    cfg.devices = [...(root.querySelectorAll(".device-name-input") || [])]
+      .map(el => el.value.trim()).filter(Boolean);
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.hard_refresh       = root.querySelector("#hard-refresh")?.checked      || false;
     cfg.refresh_interval   = parseInt(root.querySelector("#refresh-interval")?.value) || 60;
@@ -788,6 +925,8 @@ class KindleDashboardPanel extends HTMLElement {
       color:#fff;padding:4px 8px;border-radius:4px;font-size:13px;
       max-width:180px;cursor:pointer}
     .dash-picker option{background:#333;color:#fff}
+    .topbar-info{font-size:12px;color:rgba(255,255,255,.85);white-space:nowrap;
+      padding:0 2px;letter-spacing:.01em}
     .topbar-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);
       color:#fff;padding:4px 10px;border-radius:4px;font-size:13px;cursor:pointer;white-space:nowrap}
     .topbar-btn:hover{background:rgba(255,255,255,.25)}
@@ -925,9 +1064,27 @@ class KindleDashboardPanel extends HTMLElement {
       color:var(--primary-color,#03a9f4);padding:7px 14px;border-radius:4px;
       cursor:pointer;font-size:13px;white-space:nowrap}
     .kindle-url{font-family:monospace;background:var(--secondary-background-color,#f5f5f5);
-      padding:8px 12px;border-radius:4px;font-size:12px;word-break:break-all;
-      border:1px solid var(--divider-color,#ddd);min-height:34px}
+      padding:6px 10px;border-radius:4px;font-size:12px;
+      border:1px solid var(--divider-color,#ddd);min-height:30px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .kindle-url a{color:var(--primary-color,#03a9f4)}
+    .device-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+    .device-row{display:grid;
+      grid-template-columns:180px 1fr 34px 28px;
+      gap:6px;align-items:center}
+    .device-url{font-family:monospace;font-size:11px;
+      background:var(--secondary-background-color,#f5f5f5);
+      padding:5px 8px;border-radius:4px;
+      border:1px solid var(--divider-color,#ddd);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+    .device-name-input{padding:5px 8px;border-radius:4px;font-size:13px;
+      border:1px solid var(--divider-color,#ccc);
+      background:var(--primary-background-color,#fff);
+      color:var(--primary-text-color);width:100%}
+    .device-name-input:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
+    .btn-remove-device{background:none;border:none;cursor:pointer;
+      color:var(--error-color,#db4437);font-size:16px;padding:0;
+      display:flex;align-items:center;justify-content:center}
     .muted{color:var(--secondary-text-color,#999)}
     #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
       background:#323232;color:#fff;padding:10px 22px;border-radius:4px;
