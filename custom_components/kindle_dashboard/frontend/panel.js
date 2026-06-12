@@ -98,6 +98,7 @@ class KindleDashboardPanel extends HTMLElement {
       <div class="top-bar">
         <h1>📱 Kindle Dashboard</h1>
         <select id="dashboard-picker" class="dash-picker"></select>
+        <button id="btn-force-refresh" class="topbar-btn">↺ Force Refresh</button>
         <span id="topbar-link"></span>
       </div>
       <div class="float-save" id="float-save">
@@ -117,14 +118,12 @@ class KindleDashboardPanel extends HTMLElement {
             </div>
             <div class="form-row">
               <label>Kindle Bookmark URL</label>
-              <div class="kindle-url" id="token-url-display"></div>
+              <div style="display:flex;gap:6px;align-items:stretch">
+                <div class="kindle-url" id="token-url-display" style="flex:1"></div>
+                <button id="btn-copy-url" class="backup-btn" title="Copy URL">⎘ Copy</button>
+              </div>
             </div>
-            <div class="form-row">
-              <button id="btn-force-refresh" class="force-refresh-btn">
-                ↺ Force Kindle Refresh
-              </button>
-              <p class="hint" style="margin-top:4px" id="force-refresh-hint"></p>
-            </div>
+            <p id="force-refresh-hint" class="hint"></p>
           </div>
         </div>
 
@@ -134,42 +133,10 @@ class KindleDashboardPanel extends HTMLElement {
             <p class="hint">Export your full dashboard configuration to a JSON file, or import a previously saved one. Importing loads the config into the editor — review it and hit Save to apply.</p>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <button id="btn-export" class="backup-btn">⬇ Export Config</button>
-              <label class="backup-btn backup-import-label" title="Import a config JSON file">
-                ⬆ Import Config
-                <input type="file" id="import-file" accept=".json,application/json"
-                       style="display:none">
-              </label>
+              <button id="btn-import" class="backup-btn">⬆ Import Config</button>
+              <input type="file" id="import-file" accept=".json,application/json"
+                     style="display:none">
               <span id="import-status" style="font-size:12px;color:var(--secondary-text-color,#888)"></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header"><span class="icon">📐</span> Page Dimensions</div>
-          <div class="card-body">
-            <div class="form-row two-col">
-              <div>
-                <label>Page Width</label>
-                <div class="num-row">
-                  <input type="number" id="page-width" min="320" max="1920" step="10">
-                  <span class="num-unit">px</span>
-                </div>
-              </div>
-              <div>
-                <label>Page Height</label>
-                <div class="num-row">
-                  <input type="number" id="page-height" min="320" max="2560" step="10">
-                  <span class="num-unit">px</span>
-                </div>
-              </div>
-            </div>
-            <div class="form-row">
-              <label>Scale</label>
-              <div style="display:flex;align-items:center;gap:10px">
-                <input type="range" id="page-scale" min="0.5" max="3.0" step="0.05" style="flex:1">
-                <span id="page-scale-display" class="num-unit" style="width:40px;text-align:right">1.0×</span>
-              </div>
-              <p class="hint" style="margin-top:4px">Scales all content proportionally for high-DPI screens.</p>
             </div>
           </div>
         </div>
@@ -200,9 +167,16 @@ class KindleDashboardPanel extends HTMLElement {
               </div>
             </div>
             <div class="form-row">
+              <label>Auto-Refresh Interval</label>
+              <div class="num-row">
+                <input type="number" id="refresh-interval" min="10" max="3600" step="10">
+                <span class="num-unit">seconds</span>
+              </div>
+            </div>
+            <div class="form-row">
               <label class="opt-row">
                 <input type="checkbox" id="hard-refresh">
-                <span>Hard refresh <em>(full page reload instead of entity update)</em></span>
+                <span>Hard Refresh <em>— reloads the entire page including config and assets, instead of only updating entity states. Use when changes are not appearing after a config save.</em></span>
               </label>
             </div>
             <div class="form-row">
@@ -217,6 +191,7 @@ class KindleDashboardPanel extends HTMLElement {
                 <span>Show battery in top bar <em>(requires shortcut_browser.sh setup)</em></span>
               </label>
             </div>
+            <div class="form-row"><label>Text Styling</label></div>
             <div class="font-style-grid">
               <div class="font-style-row">
                 <label class="fsr-label">Label</label>
@@ -256,6 +231,36 @@ class KindleDashboardPanel extends HTMLElement {
               </div>
             </div>
           </div>
+        <div class="card">
+          <div class="card-header"><span class="icon">📐</span> Page Dimensions</div>
+          <div class="card-body">
+            <div class="form-row two-col">
+              <div>
+                <label>Page Width</label>
+                <div class="num-row">
+                  <input type="number" id="page-width" min="320" max="1920" step="10">
+                  <span class="num-unit">px</span>
+                </div>
+              </div>
+              <div>
+                <label>Page Height</label>
+                <div class="num-row">
+                  <input type="number" id="page-height" min="320" max="2560" step="10">
+                  <span class="num-unit">px</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Scale</label>
+              <div style="display:flex;align-items:center;gap:10px">
+                <input type="range" id="page-scale" min="0.5" max="3.0" step="0.05" style="flex:1">
+                <span id="page-scale-display" class="num-unit" style="width:40px;text-align:right">1.0×</span>
+              </div>
+              <p class="hint" style="margin-top:4px">Scales all content proportionally for high-DPI screens.</p>
+            </div>
+          </div>
+        </div>
+
         </div>
 
         <div class="card">
@@ -311,14 +316,16 @@ class KindleDashboardPanel extends HTMLElement {
       : `<span class="muted">Paste a token above and save to generate the URL</span>`;
     const topLink = root.querySelector("#topbar-link");
     topLink.innerHTML = tokenUrl
-      ? `<a href="${this._esc(tokenUrl)}" target="_blank">Open Kindle View ↗</a>` : "";
+      ? `<a href="${this._esc(tokenUrl)}" target="_blank">Preview ↗</a>` : "";
 
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
     const themeSel = root.querySelector("#theme-select");
     if (themeSel) themeSel.value = cfg.theme || "sharp";
     // inline-units synced via _paintSections (in sensors sec header)
-    root.querySelector("#hard-refresh").checked  = !!cfg.hard_refresh;
+    root.querySelector("#hard-refresh").checked    = !!cfg.hard_refresh;
+    const _ri = root.querySelector("#refresh-interval");
+    if (_ri) _ri.value = cfg.refresh_interval ?? 60;
     const _sc = root.querySelector("#show-clock");
     if (_sc) _sc.checked = cfg.show_clock !== false;
     const _sb = root.querySelector("#show-battery");
@@ -455,7 +462,7 @@ class KindleDashboardPanel extends HTMLElement {
       }
     });
     root.addEventListener("change", (e) => {
-      this._markDirty();
+      if (e.target.id !== "dashboard-picker") this._markDirty();
       if (e.target.id === "dashboard-picker") {
         this._activeEntryId = e.target.value;
         this._config = null;
@@ -497,6 +504,14 @@ class KindleDashboardPanel extends HTMLElement {
       }
       if (btn.id === "btn-force-refresh") { this._doForceRefresh(); return; }
       if (btn.id === "btn-export")         { this._doExport();       return; }
+      if (btn.id === "btn-import") { root.querySelector("#import-file")?.click(); return; }
+      if (btn.id === "btn-copy-url") {
+        const url = root.querySelector("#token-url-display a")?.href || "";
+        if (!url) return;
+        if (navigator.clipboard) { navigator.clipboard.writeText(url).then(() => this._toast("✓ URL copied")); }
+        else { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); this._toast("✓ URL copied"); }
+        return;
+      }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
       if (btn.id === "save-btn")        { this._doSave();        return; }
       if (btn.id === "discard-btn") {
@@ -544,7 +559,8 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.location_name    = root.querySelector("#location-name")?.value.trim() || "Home";
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
-    cfg.hard_refresh     = root.querySelector("#hard-refresh")?.checked        || false;
+    cfg.hard_refresh       = root.querySelector("#hard-refresh")?.checked      || false;
+    cfg.refresh_interval   = parseInt(root.querySelector("#refresh-interval")?.value) || 60;
     cfg.show_clock       = root.querySelector("#show-clock")?.checked          !== false;
     cfg.show_battery     = root.querySelector("#show-battery")?.checked        || false;
     cfg.theme            = root.querySelector("#theme-select")?.value          || "sharp";
@@ -768,6 +784,10 @@ class KindleDashboardPanel extends HTMLElement {
       color:#fff;padding:4px 8px;border-radius:4px;font-size:13px;
       max-width:180px;cursor:pointer}
     .dash-picker option{background:#333;color:#fff}
+    .topbar-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);
+      color:#fff;padding:4px 10px;border-radius:4px;font-size:13px;cursor:pointer;white-space:nowrap}
+    .topbar-btn:hover{background:rgba(255,255,255,.25)}
+    .topbar-btn:disabled{opacity:.5;cursor:default}
     .top-bar a{color:inherit;font-size:13px;opacity:.85;text-decoration:none;
       border:1px solid rgba(255,255,255,.5);padding:4px 10px;border-radius:4px;white-space:nowrap}
     .float-save{display:none;position:fixed;bottom:24px;right:24px;
@@ -890,7 +910,6 @@ class KindleDashboardPanel extends HTMLElement {
       cursor:pointer;font-size:13px;white-space:nowrap;display:inline-flex;
       align-items:center;gap:6px}
     .backup-btn:hover{background:rgba(3,169,244,.06)}
-    .backup-import-label{cursor:pointer;user-select:none}
     .force-refresh-btn{
       width:100%;padding:8px;border:2px solid var(--primary-color,#03a9f4);
       background:var(--primary-color,#03a9f4);color:#fff;

@@ -20,6 +20,7 @@ from .const import (
     CONFIG_VERSION,
     DEFAULT_FONT,
     DEFAULT_HARD_REFRESH,
+    DEFAULT_REFRESH_INTERVAL,
     DEFAULT_HIDE_ENTITY_NAMES,
     DEFAULT_INLINE_UNITS,
     DEFAULT_LABEL_BOLD,
@@ -143,6 +144,7 @@ def _merged_config(entry: ConfigEntry) -> dict:
         "page_height":          DEFAULT_PAGE_HEIGHT,
         "page_scale":           DEFAULT_PAGE_SCALE,
         "hard_refresh":         DEFAULT_HARD_REFRESH,
+        "refresh_interval":     DEFAULT_REFRESH_INTERVAL,
         "show_clock":           DEFAULT_SHOW_CLOCK,
         "show_battery":         DEFAULT_SHOW_BATTERY,
         "theme":                DEFAULT_THEME,
@@ -208,6 +210,7 @@ class KindleView(HomeAssistantView):
         page_height      = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
         page_scale       = float(cfg.get("page_scale",    DEFAULT_PAGE_SCALE))
         hard_refresh     = cfg.get("hard_refresh",        DEFAULT_HARD_REFRESH)
+        refresh_interval = int(cfg.get("refresh_interval", DEFAULT_REFRESH_INTERVAL))
         show_clock       = cfg.get("show_clock",          DEFAULT_SHOW_CLOCK)
         show_battery     = cfg.get("show_battery",        DEFAULT_SHOW_BATTERY)
         theme            = cfg.get("theme",               DEFAULT_THEME)
@@ -239,7 +242,8 @@ class KindleView(HomeAssistantView):
             f"const SECTIONS         = {json.dumps(sections)};\n"
             f"const BODY_FONT        = {json.dumps(font)};\n"
             f"const INLINE_UNITS     = {json.dumps(inline_units)};\n"
-            f"const HARD_REFRESH     = {json.dumps(hard_refresh)};\n"
+            f"const HARD_REFRESH       = {json.dumps(hard_refresh)};\n"
+            f"const REFRESH_INTERVAL  = {json.dumps(refresh_interval)};\n"
             f"const SHOW_CLOCK       = {json.dumps(show_clock)};\n"
             f"const SHOW_BATTERY     = {json.dumps(show_battery)};\n"
             f"const THEME            = {json.dumps(theme)};\n"

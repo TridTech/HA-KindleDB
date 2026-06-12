@@ -825,7 +825,8 @@ fetchTimezone().then(() => {
   kbCheckReload();  // record initial reload token
 });
 fetchAll();
-setInterval(fetchAll, 60000);
+setInterval(fetchAll,
+  (typeof REFRESH_INTERVAL !== 'undefined' ? REFRESH_INTERVAL : 60) * 1000);
 </script>
 </body>
 </html>
