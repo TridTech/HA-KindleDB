@@ -9,7 +9,9 @@ A Home Assistant custom integration that serves a clean, e-ink–optimised dashb
 - **Flexible sections** — add, remove, and reorder as many sections as you like; each section is one of:
   - **Sensors** — compact read-only tiles, configurable label and unit
   - **Toggles** — large-tap-target rows for lights, switches, fans, covers, locks, etc.
-  - **Scenes** — tappable scene buttons, optional 2-column layout
+  - **Scenes** — tappable scene buttons
+  - Toggles and Scenes support an optional 2-column layout; Sensors display in up to 4 columns automatically
+  - All section types support hiding entity IDs
 - **Font picker** — choose from Georgia, Courier New, Times New Roman, Arial, Helvetica, Verdana, Palatino, or Bookman
 - **Per-tier text styling** — independent bold, italic, underline, and size controls for labels, ID/unit text, and sensor values
 - **Inline or stacked units** — show sensor units on the same line as the value (`22 °F`) or on the line below
@@ -53,14 +55,27 @@ Generate a Long-Lived Access Token in your HA profile → paste it here → save
 **Force Kindle Refresh** — the blue button below the URL sends an immediate reload signal to the Kindle page. The Kindle will reload within 5 seconds. Useful after saving config changes without walking over to the device.
 
 ### Page Dimensions
-- **Page Width / Height** — set to match your Kindle's screen resolution
-- **Scale** — scales all content proportionally; useful for high-DPI screens
+Set the page dimensions to match your Kindle's physical screen resolution, then use the scale factor to make content the right size for the display's pixel density.
+
+- **Page Width / Height** — the logical dimensions of the page in CSS pixels
+- **Scale** — multiplies all content proportionally; use values above 1.0 for high-DPI screens where content would otherwise appear too small
+
+**Example — Kindle Paperwhite 10th Generation:**
+| Setting | Value |
+|---|---|
+| Page Width | 536 px |
+| Page Height | 722 px |
+| Scale | 2.0× |
+
+Other Kindle models will need different values. A good starting point is to set width and height to the screen's pixel dimensions and scale to 1.0, then adjust scale up until text and controls feel comfortably sized.
 
 ### General
 - **Location Name** — displayed in the info bar
 - **Theme** — choose from Sharp, Soft, Ink, or Minimal
 - **Font** — body font for the entire Kindle page
 - **Label / ID+Unit / Value font size** — independent size controls with bold, italic, and underline toggles for each tier
+- **Show clock in top bar** — displays the current time in the black bar at the top of the page
+- **Show battery in top bar** — displays the Kindle battery percentage (requires the shortcut browser HTTP server setup below)
 - **Hard Refresh** — when enabled, the ↺ Refresh button on the Kindle does a full page reload (re-fetches HTML, config, and assets) rather than just pulling updated entity values. Useful if you notice stale content after config changes.
 
 ### Sections
@@ -68,13 +83,15 @@ Each section card shows its type badge, a name field, and its items. Use ↑ ↓
 
 To add a section: pick a type from the dropdown at the bottom of the Sections card and click **+ Add Section**.
 
-**Section types and their options:**
+**Section types and options:**
 
-| Type | Options | Item fields |
+| Type | Per-section options | Item fields |
 |---|---|---|
 | Sensors | Inline Units, Hide IDs | Entity, Label, Unit |
 | Toggles | 2 Columns, Hide IDs | Icon, Entity, Label, Hide from status |
 | Scenes | 2 Columns, Hide IDs | Icon, Entity, Name |
+
+Sensors automatically lay out in up to 4 columns based on how many items are in the section. **2 Columns** is available for Toggles and Scenes, arranging their items in a two-column grid rather than a single list. **Hide IDs** suppresses the entity ID shown beneath each item's label.
 
 Click **Save** when done. Changes take effect on the next Kindle page load, or use **Force Kindle Refresh** to push them immediately.
 
