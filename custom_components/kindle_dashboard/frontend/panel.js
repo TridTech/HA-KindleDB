@@ -326,7 +326,7 @@ class KindleDashboardPanel extends HTMLElement {
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
     const themeSel = root.querySelector("#theme-select");
     if (themeSel) themeSel.value = cfg.theme || "sharp";
-    // inline-units synced via _paintSections (in sensors sec header)
+    // inline-units is in sensors section header (see _sectionHTML)
     root.querySelector("#hard-refresh").checked    = !!cfg.hard_refresh;
     const _ri = root.querySelector("#refresh-interval");
     if (_ri) _ri.value = cfg.refresh_interval ?? 60;
@@ -921,13 +921,6 @@ class KindleDashboardPanel extends HTMLElement {
       cursor:pointer;font-size:13px;white-space:nowrap;display:inline-flex;
       align-items:center;gap:6px}
     .backup-btn:hover{background:rgba(3,169,244,.06)}
-    .force-refresh-btn{
-      width:100%;padding:8px;border:2px solid var(--primary-color,#03a9f4);
-      background:var(--primary-color,#03a9f4);color:#fff;
-      border-radius:4px;cursor:pointer;font-size:14px;font-weight:500;
-      letter-spacing:.02em}
-    .force-refresh-btn:hover{opacity:.9}
-    .force-refresh-btn:disabled{opacity:.5;cursor:default}
     .add-btn{background:none;border:1px solid var(--primary-color,#03a9f4);
       color:var(--primary-color,#03a9f4);padding:7px 14px;border-radius:4px;
       cursor:pointer;font-size:13px;white-space:nowrap}

@@ -2,5 +2,5 @@
   "name": "Kindle Dashboard",
   "hacs": "1.32.0",
   "homeassistant": "2024.1.0",
-  "render_readme": false
+  "render_readme": true
 }

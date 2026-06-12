@@ -801,8 +801,7 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-/* clock removed from header — time shown in kb-bar */
-function updateClock() {}  /* no-op kept so setInterval doesn't error */
+/* clock is shown in kb-bar only */
 
 function toast(msg) {
   const el = document.getElementById("toast");
@@ -819,8 +818,6 @@ buildLightSummary();
 buildAllSections();
 // Fetch timezone from HA, then start clock (ensures first tick is correct)
 fetchTimezone().then(() => {
-  updateClock();
-  setInterval(updateClock, 30000);
   if (_barVisible) kbTick();  // now formatTime is available
   kbCheckReload();  // record initial reload token
 });
