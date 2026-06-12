@@ -76,6 +76,7 @@ class KindleDashboardPanel extends HTMLElement {
   // ── MOUNT: build static chrome once, wire listeners once ───────────────
 
   _mount() {
+    if (this._mounted) return;  // never re-mount; prevents listener duplication
     this.shadowRoot.innerHTML = `<style>${this._css()}</style>
       <div class="top-bar">
         <h1>📱 Kindle Dashboard</h1>
@@ -393,6 +394,7 @@ class KindleDashboardPanel extends HTMLElement {
   }
 
   _wireListeners() {
+    if (this._mounted) return;  // listeners already attached
     const root = this.shadowRoot;
 
     // Any input/change → mark dirty; font select also updates preview
