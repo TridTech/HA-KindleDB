@@ -25,6 +25,14 @@ A Home Assistant custom integration that serves a clean, e-ink–optimised dashb
 
 ---
 
+## Screenshot
+
+![Kindle Dashboard running on a Kindle Paperwhite 10th Generation](example_screenshot.png)
+
+*Sharp theme · Georgia font · Sensors, Toggles (single and 2-column), running on a Kindle Paperwhite 10th Generation*
+
+---
+
 ## Installation via HACS
 
 1. In HACS → ⋮ → **Custom Repositories** → paste your GitHub repo URL → category: **Integration**
