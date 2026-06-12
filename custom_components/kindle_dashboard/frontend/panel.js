@@ -504,6 +504,49 @@ class KindleDashboardPanel extends HTMLElement {
 
   // ── LISTENERS — wired once in _mount ────────────────────────────────────
 
+  _buildConfigSnippet(fullUrl) {
+    return [
+      "## CONFIG HERE",
+      "GO_FULLSCREEN=true",
+      `FULLSCREEN_SITE="${fullUrl}"`,
+      "EXTRACHROMEARGS=\"--kiosk\"",
+      "USERAGENT=\"Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+\"",
+      "BROWSERSCALING=1",
+      "## END CONFIG",
+      "## Kindle Dashboard — battery, sleep prevention, and HTTP server ##",
+      "BAT_FILE=\"/mnt/us/kbbat\"",
+      "# ── Battery ───────────────────────────────────────────────────────────────",
+      "BAT=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null | tr -d '[] ')",
+      "[ -z \"$BAT\" ] && BAT=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -1)",
+      "[ -z \"$BAT\" ] && BAT=\"?\"",
+      "printf '%s' \"$BAT\" > \"$BAT_FILE\"",
+      "( while true; do",
+      "    B=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null | tr -d '[] ')",
+      "    [ -z \"$B\" ] && B=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -1)",
+      "    [ -z \"$B\" ] && B=\"?\"",
+      "    printf '%s' \"$B\" > \"$BAT_FILE\"",
+      "    sleep 30",
+      "  done ) &",
+      "BAT_PID=$!",
+      "# ── Prevent sleep while dashboard is running ─────────────────────────────",
+      "lipc-set-prop -i com.lab126.powerd preventScreenSaver 1",
+      "# ── Cleanup on exit: restore sleep and kill background jobs ──────────────",
+      "trap 'lipc-set-prop -i com.lab126.powerd preventScreenSaver 0; \\",
+      "      kill $BAT_PID $BAT_HTTP_PID 2>/dev/null' \\",
+      "     EXIT INT TERM",
+      "# ── HTTP server on port 2024: serves battery value to the dashboard ───────",
+      "BAT_PORT=2024",
+      "( while true; do",
+      "    VAL=$(cat \"$BAT_FILE\" 2>/dev/null || echo \"?\")",
+      "    BODY=\"${VAL}\"",
+      "    RESP=\"HTTP/1.0 200 OK\\r\\nContent-Type: text/plain\\r\\nAccess-Control-Allow-Origin: *\\r\\nContent-Length: ${#BODY}\\r\\nConnection: close\\r\\n\\r\\n${BODY}\"",
+      "    echo -e \"$RESP\" | nc -l -p $BAT_PORT",
+      "  done ) &",
+      "BAT_HTTP_PID=$!",
+      "## End Kindle Dashboard additions ##",
+    ].join("\n");
+  }
+
   _buildTokenUrl(root, cfg) {
     const token = cfg?.kindle_token || root?.querySelector("#kindle-token")?.value.trim() || "";
     return (token && this._activeEntryId)
@@ -523,13 +566,16 @@ class KindleDashboardPanel extends HTMLElement {
       const devUrl = baseUrl
         ? baseUrl + (name ? "&device=" + encodeURIComponent(name) : "")
         : "";
+      const cfgSnippet = this._buildConfigSnippet(devUrl);
       return `
         <div class="device-row" data-idx="${i}">
           <input class="device-name-input" type="text"
                  placeholder="e.g. bedroom-kindle" value="${this._esc(name)}">
           <div class="kindle-url device-url">${this._esc(devUrl)}</div>
           <button class="btn-copy-device-url backup-btn"
-                  data-url="${this._esc(devUrl)}" title="Copy URL">⎘</button>
+                  data-url="${this._esc(devUrl)}" title="Copy URL">⎘ URL</button>
+          <button class="btn-copy-device-cfg backup-btn"
+                  data-cfg="${this._esc(cfgSnippet)}" title="Copy shortcut_browser.sh config">⎘ Config</button>
           <button class="btn-remove-device" data-idx="${i}" title="Remove device">✕</button>
         </div>`;
     }).join("");
@@ -544,6 +590,8 @@ class KindleDashboardPanel extends HTMLElement {
           : "";
         row.querySelector(".device-url").textContent   = devUrl;
         row.querySelector(".btn-copy-device-url").dataset.url = devUrl;
+        const newCfg = this._buildConfigSnippet(devUrl);
+        row.querySelector(".btn-copy-device-cfg").dataset.cfg = newCfg;
       });
     });
   }
@@ -649,6 +697,13 @@ class KindleDashboardPanel extends HTMLElement {
         if (!url) return;
         if (navigator.clipboard) { navigator.clipboard.writeText(url).then(() => this._toast("✓ URL copied")); }
         else { const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); this._toast("✓ URL copied"); }
+        return;
+      }
+      if (btn.classList.contains("btn-copy-device-cfg")) {
+        const cfg = btn.dataset.cfg;
+        if (!cfg) return;
+        if (navigator.clipboard) { navigator.clipboard.writeText(cfg).then(() => this._toast("✓ Config copied")); }
+        else { const t=document.createElement("textarea"); t.value=cfg; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); this._toast("✓ Config copied"); }
         return;
       }
       if (btn.id === "btn-add-section") { this._doAddSection();  return; }
@@ -899,11 +954,11 @@ class KindleDashboardPanel extends HTMLElement {
       });
       // Refresh dashboard list (name may have changed)
       await this._loadDashboards();
+      this._config = cfg;  // set BEFORE syncToDOM so device list renders correctly
       this._syncToDOM();
-      this._config = cfg;
       this.shadowRoot.querySelector("#float-save")?.classList.remove("visible");
       this._toast("✓ Saved — reload Kindle page to apply");
-      this._paintSections(); // reflect any filtering
+      this._paintSections();
     } catch(e) { this._toast("Error saving: " + e.message); }
   }
 
@@ -1070,7 +1125,7 @@ class KindleDashboardPanel extends HTMLElement {
     .kindle-url a{color:var(--primary-color,#03a9f4)}
     .device-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
     .device-row{display:grid;
-      grid-template-columns:180px 1fr 34px 28px;
+      grid-template-columns:180px 1fr auto auto 28px;
       gap:6px;align-items:center}
     .device-url{font-family:monospace;font-size:11px;
       background:var(--secondary-background-color,#f5f5f5);

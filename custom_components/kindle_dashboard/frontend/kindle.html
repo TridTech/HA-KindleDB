@@ -542,12 +542,7 @@ if (_showClock)   document.getElementById("kb-time").style.display = "block";
 if (_showBattery) document.getElementById("kb-bat").style.display  = "block";
 // Apply theme class to body
 document.body.className = (typeof THEME !== "undefined" && THEME) ? "theme-" + THEME : "theme-sharp";
-// Show device name in footer if set
-(function() {
-  var _dn = new URLSearchParams(window.location.search).get("device") || "";
-  var _el = document.getElementById("device-label");
-  if (_el && _dn) _el.textContent = _dn;
-})();
+/* device label set at bottom of page */
 const _pw = (typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600;
 const _ph = (typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800;
 const _sc = (typeof PAGE_SCALE  !== "undefined" && PAGE_SCALE)  || 1.0;
@@ -894,6 +889,24 @@ fetchTimezone().then(() => {
 fetchAll();
 setInterval(fetchAll,
   (typeof REFRESH_INTERVAL !== 'undefined' ? REFRESH_INTERVAL : 60) * 1000);
+</script>
+<script>
+/* Set device label in footer — runs after full DOM parse */
+(function() {
+  /* Manual query string parser for old WebKit compatibility */
+  var search = window.location.search.slice(1);
+  var dn = "";
+  search.split("&").forEach(function(pair) {
+    var parts = pair.split("=");
+    if (parts[0] === "device" && parts[1]) {
+      dn = decodeURIComponent(parts[1].replace(/\+/g, " "));
+    }
+  });
+  if (dn) {
+    var el = document.getElementById("device-label");
+    if (el) el.textContent = dn;
+  }
+})();
 </script>
 </body>
 </html>
