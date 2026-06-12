@@ -25,6 +25,7 @@ from .const import (
     DEFAULT_LABEL_UNDERLINE,
     DEFAULT_PAGE_HEIGHT,
     DEFAULT_HARD_REFRESH,
+    DEFAULT_THEME,
     DEFAULT_PAGE_SCALE,
     DEFAULT_PAGE_WIDTH,
     DEFAULT_SUB_BOLD,
@@ -127,6 +128,7 @@ def _merged_config(entry: ConfigEntry) -> dict:
         "page_width":           DEFAULT_PAGE_WIDTH,
         "page_height":          DEFAULT_PAGE_HEIGHT,
         "hard_refresh":         DEFAULT_HARD_REFRESH,
+        "theme":                DEFAULT_THEME,
         "page_scale":           DEFAULT_PAGE_SCALE,
         "label_font_size":      DEFAULT_LABEL_FONT_SIZE,
         "label_bold":           DEFAULT_LABEL_BOLD,
@@ -176,6 +178,7 @@ class KindleView(HomeAssistantView):
         page_width      = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
         page_height     = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
         hard_refresh    = cfg.get("hard_refresh",      DEFAULT_HARD_REFRESH)
+        theme           = cfg.get("theme",             DEFAULT_THEME)
         page_scale      = float(cfg.get("page_scale",     DEFAULT_PAGE_SCALE))
         label_font_size = cfg.get("label_font_size",     DEFAULT_LABEL_FONT_SIZE)
         label_bold      = cfg.get("label_bold",          DEFAULT_LABEL_BOLD)
@@ -204,6 +207,7 @@ class KindleView(HomeAssistantView):
             f"const INLINE_UNITS     = {json.dumps(inline_units)};\n"
             f"const PAGE_HEIGHT      = {json.dumps(page_height)};\n"
             f"const HARD_REFRESH     = {json.dumps(hard_refresh)};\n"
+            f"const THEME            = {json.dumps(theme)};\n"
             f"const PAGE_SCALE       = {json.dumps(page_scale)};\n"
             f"const LABEL_FONT_SIZE  = {json.dumps(label_font_size)};\n"
             f"const LABEL_BOLD       = {json.dumps(label_bold)};\n"

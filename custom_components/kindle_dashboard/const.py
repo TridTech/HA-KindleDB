@@ -16,6 +16,14 @@ DEFAULT_PAGE_WIDTH         = 536
 DEFAULT_PAGE_HEIGHT        = 702
 DEFAULT_PAGE_SCALE         = 1.0
 DEFAULT_HARD_REFRESH       = False
+DEFAULT_THEME              = "sharp"
+
+AVAILABLE_THEMES = [
+    {"value": "sharp",   "label": "Sharp (default) — hard edges, max contrast"},
+    {"value": "soft",    "label": "Soft — rounded corners, lighter borders"},
+    {"value": "ink",     "label": "Ink — editorial, whitespace-forward"},
+    {"value": "minimal", "label": "Minimal — near-invisible borders, dense"},
+]
 DEFAULT_LABEL_FONT_SIZE    = 13
 DEFAULT_LABEL_BOLD         = False
 DEFAULT_LABEL_ITALIC       = False

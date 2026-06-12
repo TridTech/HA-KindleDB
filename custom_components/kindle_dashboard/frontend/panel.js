@@ -16,6 +16,13 @@ const FONTS = [
   { value: "Bookman, serif",           label: "Bookman" },
 ];
 
+const THEMES = [
+  { value: "sharp",   label: "Sharp (default)" },
+  { value: "soft",    label: "Soft" },
+  { value: "ink",     label: "Ink" },
+  { value: "minimal", label: "Minimal" },
+];
+
 const SECTION_TYPES = [
   { value: "sensors", label: "Sensors (read-only display)" },
   { value: "toggles", label: "Toggles (lights & switches)" },
@@ -134,9 +141,17 @@ class KindleDashboardPanel extends HTMLElement {
               <label>Location Name</label>
               <input type="text" id="location-name" placeholder="Home">
             </div>
-            <div class="form-row">
-              <label>Font</label>
-              <select id="font-select"></select>
+            <div class="form-row two-col">
+              <div>
+                <label>Font</label>
+                <select id="font-select"></select>
+              </div>
+              <div>
+                <label>Theme</label>
+                <select id="theme-select">
+                  ${THEMES.map(t => `<option value="${t.value}">${t.label}</option>`).join("")}
+                </select>
+              </div>
             </div>
             <div class="form-row">
               <label class="opt-row">
@@ -232,6 +247,8 @@ class KindleDashboardPanel extends HTMLElement {
 
     // General
     root.querySelector("#location-name").value      = cfg.location_name || "Home";
+    const themeSel = root.querySelector("#theme-select");
+    if (themeSel) themeSel.value = cfg.theme || "sharp";
     // inline-units synced via _paintSections (in sensors sec header)
     root.querySelector("#hard-refresh").checked = !!cfg.hard_refresh;
     root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
@@ -430,6 +447,7 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.hard_refresh     = root.querySelector("#hard-refresh")?.checked        || false;
+    cfg.theme            = root.querySelector("#theme-select")?.value          || "sharp";
     // inline_units is read from the first sensors section header
     const inlineEl = root.querySelector(".sec-inlineunits");
     cfg.inline_units = inlineEl ? inlineEl.checked : (this._config?.inline_units || false);

@@ -212,6 +212,157 @@
     background: #000; color: #fff; font-family: 'Courier New', monospace;
     font-size: 11px; padding: 6px 16px; display: none; white-space: nowrap;
   }
+
+  /* ═══════════════════════════════════════════════════════
+     THEME OVERRIDES
+     Applied via body.theme-* class set in JS boot block.
+     Each theme only overrides what differs from Sharp.
+  ═══════════════════════════════════════════════════════ */
+
+  /* ── SOFT: rounded corners, lighter borders, pill switch ── */
+  body.theme-soft #info-bar {
+    background: #f5f5f5; border-bottom: 1px solid #ccc; border-radius: 0;
+  }
+  body.theme-soft .section-label {
+    border-top: 1px solid #ccc; border-bottom: 1px solid #ddd;
+    background: #f8f8f8; border-radius: 0; letter-spacing: .12em;
+  }
+  body.theme-soft .sensor-grid { padding: 10px 12px; gap: 8px; }
+  body.theme-soft .sensor-tile {
+    border: 1px solid #bbb; border-radius: 10px; padding: 6px 8px;
+  }
+  body.theme-soft .scenes-grid { padding: 10px 12px; gap: 10px; }
+  body.theme-soft .scene-btn {
+    border: 1px solid #bbb; border-radius: 10px; overflow: hidden;
+  }
+  body.theme-soft .scene-btn:active,
+  body.theme-soft .scene-btn.active-scene { background: #222; }
+  body.theme-soft .scene-icon-bg { background: #f0f0f0; }
+  body.theme-soft .toggles-list { padding: 10px 12px; gap: 8px; }
+  body.theme-soft .toggles-grid { padding: 10px 12px; gap: 8px; }
+  body.theme-soft .toggle-row {
+    border: 1px solid #bbb; border-radius: 10px; overflow: hidden;
+  }
+  body.theme-soft .toggle-row:active { background: #f0f0f0; }
+  body.theme-soft .toggle-icon {
+    border-right: 1px solid #ddd; background: #f8f8f8;
+    border-radius: 10px 0 0 10px;
+  }
+  body.theme-soft .toggle-switch {
+    border: 1px solid #bbb; border-radius: 14px;
+    margin-right: 12px; width: 44px; height: 24px;
+  }
+  body.theme-soft .toggle-switch::after {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #bbb; top: 2px; left: 2px;
+  }
+  body.theme-soft .toggle-row.on .toggle-switch { background: #333; border-color: #333; }
+  body.theme-soft .toggle-row.on .toggle-switch::after {
+    background: #fff; left: calc(100% - 20px);
+  }
+  body.theme-soft #footer {
+    border-top: 1px solid #ccc;
+  }
+  body.theme-soft #refresh-btn {
+    border: 1px solid #bbb; border-radius: 6px;
+  }
+  body.theme-soft .light-dot { border-color: #888; }
+  body.theme-soft .light-dot.on { background: #333; border-color: #333; }
+
+  /* ── INK: editorial whitespace, rules not boxes ── */
+  body.theme-ink #info-bar {
+    background: #fff; border-bottom: 2px solid #000; padding: 8px 14px;
+  }
+  body.theme-ink #info-bar .loc { letter-spacing: .2em; }
+  body.theme-ink .section-label {
+    background: transparent; border-top: none; border-bottom: 2px solid #000;
+    padding: 10px 14px 6px; letter-spacing: .25em;
+  }
+  body.theme-ink .sensor-grid { padding: 12px 14px; gap: 0; }
+  body.theme-ink .sensor-tile {
+    border: none; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc;
+    padding: 8px 10px; background: transparent;
+  }
+  body.theme-ink .sensor-tile:last-child { border-right: none; }
+  body.theme-ink .scenes-grid { padding: 12px 14px; gap: 0; }
+  body.theme-ink .scene-btn {
+    border: none; border-bottom: 1px solid #ccc; border-radius: 0; min-height: 56px;
+  }
+  body.theme-ink .scene-btn:active,
+  body.theme-ink .scene-btn.active-scene {
+    background: #f0f0f0; color: #000;
+  }
+  body.theme-ink .scene-btn:active .scene-icon-bg,
+  body.theme-ink .scene-btn.active-scene .scene-icon-bg { background: #e0e0e0; color: #000; }
+  body.theme-ink .scene-btn:active .scene-desc,
+  body.theme-ink .scene-btn.active-scene .scene-desc { color: #555; }
+  body.theme-ink .scene-icon-bg { background: transparent; padding: 10px 14px 4px; }
+  body.theme-ink .toggles-list { padding: 0 14px; gap: 0; }
+  body.theme-ink .toggles-grid { padding: 0 14px; gap: 0; }
+  body.theme-ink .toggle-row {
+    border: none; border-bottom: 1px solid #ddd; border-radius: 0; min-height: 48px;
+  }
+  body.theme-ink .toggle-row:active { background: #f8f8f8; }
+  body.theme-ink .toggle-icon {
+    background: transparent; border-right: 1px solid #ddd; width: 44px;
+  }
+  body.theme-ink .toggle-switch {
+    border: 1px solid #999; width: 36px; height: 20px; margin-right: 14px;
+  }
+  body.theme-ink .toggle-switch::after {
+    width: 14px; height: 14px; background: #999; top: 2px; left: 2px;
+  }
+  body.theme-ink .toggle-row.on .toggle-switch { background: #000; }
+  body.theme-ink .toggle-row.on .toggle-switch::after {
+    background: #fff; left: calc(100% - 16px);
+  }
+  body.theme-ink #footer {
+    border-top: 1px solid #ccc; padding: 6px 14px;
+  }
+  body.theme-ink #refresh-btn { border-color: #ccc; }
+
+  /* ── MINIMAL: near-invisible borders, maximum density ── */
+  body.theme-minimal #info-bar {
+    background: transparent; border-bottom: 1px solid #ddd; padding: 4px 10px;
+  }
+  body.theme-minimal #info-bar .loc { font-size: 17px; }
+  body.theme-minimal .section-label {
+    background: transparent; border-top: 1px solid #ddd; border-bottom: none;
+    color: #888; padding: 4px 10px 2px; font-size: 9px;
+  }
+  body.theme-minimal .sensor-grid { padding: 4px 8px; gap: 4px; }
+  body.theme-minimal .sensor-tile {
+    border: 1px solid #e0e0e0; padding: 3px 5px;
+  }
+  body.theme-minimal .scenes-grid { padding: 4px 8px; gap: 4px; }
+  body.theme-minimal .scene-btn {
+    border: 1px solid #e0e0e0; min-height: 48px;
+  }
+  body.theme-minimal .scene-icon-bg { background: #f8f8f8; padding: 5px 8px 3px; font-size: 15px; }
+  body.theme-minimal .toggles-list { padding: 4px 8px; gap: 4px; }
+  body.theme-minimal .toggles-grid { padding: 4px 8px; gap: 4px; }
+  body.theme-minimal .toggle-row {
+    border: 1px solid #e0e0e0; min-height: 42px;
+  }
+  body.theme-minimal .toggle-row:active { background: #f5f5f5; }
+  body.theme-minimal .toggle-icon {
+    width: 38px; min-height: 42px; background: #f8f8f8;
+    border-right: 1px solid #e8e8e8; font-size: 15px;
+  }
+  body.theme-minimal .toggle-switch {
+    border: 1px solid #ccc; width: 40px; height: 22px; margin-right: 10px;
+  }
+  body.theme-minimal .toggle-switch::after {
+    width: 16px; height: 16px; background: #ccc; top: 2px; left: 2px;
+  }
+  body.theme-minimal .toggle-row.on .toggle-switch { background: #555; border-color: #555; }
+  body.theme-minimal .toggle-row.on .toggle-switch::after {
+    background: #fff; left: calc(100% - 18px);
+  }
+  body.theme-minimal #footer { border-top: 1px solid #ddd; padding: 3px 10px; }
+  body.theme-minimal #refresh-btn { border-color: #ddd; padding: 2px 8px; }
+  body.theme-minimal .light-dot { width: 10px; height: 10px; border-color: #aaa; }
+  body.theme-minimal .light-dot.on { background: #555; border-color: #555; }
 </style>
 </head>
 <body>
@@ -305,6 +456,8 @@ setInterval(kbCheckReload, 5000);  /* check for power-button wake every 5s */
 <script>
 // Apply font and size vars immediately before paint
 document.body.style.fontFamily = (typeof BODY_FONT !== "undefined" && BODY_FONT) || "Georgia, serif";
+// Apply theme class to body
+document.body.className = (typeof THEME !== "undefined" && THEME) ? "theme-" + THEME : "theme-sharp";
 const _pw = (typeof PAGE_WIDTH  !== "undefined" && PAGE_WIDTH)  || 600;
 const _ph = (typeof PAGE_HEIGHT !== "undefined" && PAGE_HEIGHT) || 800;
 const _sc = (typeof PAGE_SCALE  !== "undefined" && PAGE_SCALE)  || 1.0;
