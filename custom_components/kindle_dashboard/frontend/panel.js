@@ -191,72 +191,76 @@ class KindleDashboardPanel extends HTMLElement {
                 <span>Show battery in top bar <em>(requires shortcut_browser.sh setup)</em></span>
               </label>
             </div>
-            <div class="form-row"><label>Text Styling</label></div>
-            <div class="font-style-grid">
-              <div class="font-style-row">
-                <label class="fsr-label">Label</label>
-                <div class="num-row">
-                  <input type="number" id="label-font-size" min="6" max="32" step="1">
-                  <span class="num-unit">px</span>
-                </div>
-                <div class="biu-row">
-                  <button type="button" class="biu-btn" id="label-bold"   data-active="false" title="Bold"><b>B</b></button>
-                  <button type="button" class="biu-btn" id="label-italic" data-active="false" title="Italic"><i>I</i></button>
-                  <button type="button" class="biu-btn" id="label-underline" data-active="false" title="Underline"><u>U</u></button>
-                </div>
-              </div>
-              <div class="font-style-row">
-                <label class="fsr-label">ID / Unit</label>
-                <div class="num-row">
-                  <input type="number" id="sub-font-size" min="6" max="24" step="1">
-                  <span class="num-unit">px</span>
-                </div>
-                <div class="biu-row">
-                  <button type="button" class="biu-btn" id="sub-bold"   data-active="false" title="Bold"><b>B</b></button>
-                  <button type="button" class="biu-btn" id="sub-italic" data-active="false" title="Italic"><i>I</i></button>
-                  <button type="button" class="biu-btn" id="sub-underline" data-active="false" title="Underline"><u>U</u></button>
-                </div>
-              </div>
-              <div class="font-style-row">
-                <label class="fsr-label">Value</label>
-                <div class="num-row">
-                  <input type="number" id="value-font-size" min="8" max="48" step="1">
-                  <span class="num-unit">px</span>
-                </div>
-                <div class="biu-row">
-                  <button type="button" class="biu-btn" id="value-bold"   data-active="false" title="Bold"><b>B</b></button>
-                  <button type="button" class="biu-btn" id="value-italic" data-active="false" title="Italic"><i>I</i></button>
-                  <button type="button" class="biu-btn" id="value-underline" data-active="false" title="Underline"><u>U</u></button>
-                </div>
-              </div>
-            </div>
           </div>
         <div class="card">
-          <div class="card-header"><span class="icon">📐</span> Page Dimensions</div>
+          <div class="card-header"><span class="icon">📐</span> Page Dimensions &amp; Text Styling</div>
           <div class="card-body">
-            <div class="form-row two-col">
-              <div>
-                <label>Page Width</label>
-                <div class="num-row">
-                  <input type="number" id="page-width" min="320" max="1920" step="10">
-                  <span class="num-unit">px</span>
+            <div class="two-col-card">
+              <div class="two-col-card-col">
+                <label class="col-header">Page Dimensions</label>
+                <div class="form-row">
+                  <label>Width</label>
+                  <div class="num-row">
+                    <input type="number" id="page-width" min="320" max="1920" step="10">
+                    <span class="num-unit">px</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label>Height</label>
+                  <div class="num-row">
+                    <input type="number" id="page-height" min="320" max="2560" step="10">
+                    <span class="num-unit">px</span>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label>Scale</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="range" id="page-scale" min="0.5" max="3.0" step="0.05" style="flex:1">
+                    <span id="page-scale-display" class="num-unit" style="width:36px;text-align:right">1.0×</span>
+                  </div>
                 </div>
               </div>
-              <div>
-                <label>Page Height</label>
-                <div class="num-row">
-                  <input type="number" id="page-height" min="320" max="2560" step="10">
-                  <span class="num-unit">px</span>
+              <div class="two-col-card-col two-col-card-divider">
+                <label class="col-header">Text Styling</label>
+                <div class="font-style-grid">
+                  <div class="font-style-row">
+                    <label class="fsr-label">Label</label>
+                    <div class="num-row">
+                      <input type="number" id="label-font-size" min="6" max="32" step="1">
+                      <span class="num-unit">px</span>
+                    </div>
+                    <div class="biu-row">
+                      <button type="button" class="biu-btn" id="label-bold"   data-active="false" title="Bold"><b>B</b></button>
+                      <button type="button" class="biu-btn" id="label-italic" data-active="false" title="Italic"><i>I</i></button>
+                      <button type="button" class="biu-btn" id="label-underline" data-active="false" title="Underline"><u>U</u></button>
+                    </div>
+                  </div>
+                  <div class="font-style-row">
+                    <label class="fsr-label">ID / Unit</label>
+                    <div class="num-row">
+                      <input type="number" id="sub-font-size" min="6" max="24" step="1">
+                      <span class="num-unit">px</span>
+                    </div>
+                    <div class="biu-row">
+                      <button type="button" class="biu-btn" id="sub-bold"   data-active="false" title="Bold"><b>B</b></button>
+                      <button type="button" class="biu-btn" id="sub-italic" data-active="false" title="Italic"><i>I</i></button>
+                      <button type="button" class="biu-btn" id="sub-underline" data-active="false" title="Underline"><u>U</u></button>
+                    </div>
+                  </div>
+                  <div class="font-style-row">
+                    <label class="fsr-label">Value</label>
+                    <div class="num-row">
+                      <input type="number" id="value-font-size" min="8" max="48" step="1">
+                      <span class="num-unit">px</span>
+                    </div>
+                    <div class="biu-row">
+                      <button type="button" class="biu-btn" id="value-bold"   data-active="false" title="Bold"><b>B</b></button>
+                      <button type="button" class="biu-btn" id="value-italic" data-active="false" title="Italic"><i>I</i></button>
+                      <button type="button" class="biu-btn" id="value-underline" data-active="false" title="Underline"><u>U</u></button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="form-row">
-              <label>Scale</label>
-              <div style="display:flex;align-items:center;gap:10px">
-                <input type="range" id="page-scale" min="0.5" max="3.0" step="0.05" style="flex:1">
-                <span id="page-scale-display" class="num-unit" style="width:40px;text-align:right">1.0×</span>
-              </div>
-              <p class="hint" style="margin-top:4px">Scales all content proportionally for high-DPI screens.</p>
             </div>
           </div>
         </div>
@@ -843,6 +847,13 @@ class KindleDashboardPanel extends HTMLElement {
       color:var(--primary-text-color,#212121);font-size:13px;text-align:center}
     .num-row input[type=number]:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
     .num-unit{font-size:13px;color:var(--secondary-text-color,#888)}
+    .two-col-card{display:grid;grid-template-columns:1fr 1fr;gap:0}
+    .two-col-card-col{padding:0 16px 4px 0}
+    .two-col-card-divider{border-left:1px solid var(--divider-color,#e0e0e0);padding:0 0 4px 16px}
+    .col-header{display:block;font-size:11px;font-weight:600;
+      color:var(--secondary-text-color,#727272);letter-spacing:.04em;
+      text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;
+      border-bottom:1px solid var(--divider-color,#e0e0e0)}
     .font-style-grid{display:flex;flex-direction:column;gap:6px}
     .font-style-row{display:flex;align-items:center;gap:8px}
     .fsr-label{font-size:11px;font-weight:500;text-transform:uppercase;
