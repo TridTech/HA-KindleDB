@@ -17,6 +17,8 @@ A Home Assistant custom integration that serves a clean, e-ink–optimised dashb
 - **Inline or stacked units** — show sensor units on the same line as the value (`22 °F`) or on the line below
 - **Light status strip** — dots + count summary of all lights; individual lights can be excluded per-section
 - **Battery and time bar** — shows Kindle battery level and current time at the top of the page (requires shortcut browser setup below)
+- **Kindle battery as HA sensor** — each Kindle pushes its battery level to a dedicated HA sensor entity; visible in the panel top bar
+- **Active device count** — the panel shows how many Kindles are currently viewing each dashboard
 - **Configurable auto-refresh interval** — set how often entity states are pulled (default 60 seconds)
 - **Force Refresh** — reload the Kindle page remotely from the HA panel top bar, within 5 seconds
 - **Hard Refresh mode** — make the on-screen ↺ button do a full page reload instead of just pulling new values
@@ -56,25 +58,41 @@ Copy `custom_components/kindle_dashboard/` into your HA config's `custom_compone
 
 ## Configuring the Dashboard
 
-Open **Kindle Dashboard** in the sidebar. Use the **dashboard picker** in the top bar to switch between dashboards. The top bar also has a **↺ Force Refresh** button and a **Preview ↗** link that opens the Kindle page in a new tab.
+Open **Kindle Dashboard** in the sidebar. Use the **dashboard picker** in the top bar to switch between dashboards. The top bar also shows:
+- **📱 N devices** — how many Kindles are currently viewing this dashboard (updates every 10 seconds)
+- **🔋 N%** — battery level of connected Kindles (requires battery setup below); shows lowest/highest when multiple devices are active
+- **↺ Force Refresh** — immediately reloads the Kindle page
+- **Preview ↗** — opens the Kindle page in a new tab
 
 The config panel has five cards:
 
 ### Kindle URL
-Paste a Long-Lived Access Token (from your HA profile → Long-Lived Access Tokens) and save. The bookmark URL for your Kindle is generated automatically. Use the **⎘ Copy** button to copy it, or click **Preview ↗** in the top bar to open it.
+
+Paste a Long-Lived Access Token (from your HA profile → Long-Lived Access Tokens). Then add a device entry for each Kindle you want to use with this dashboard.
+
+**Devices table** — each row has:
+- **Device name** — a short identifier for this Kindle (e.g. `bedroom-kindle`). Used for per-device battery tracking and shown in the footer of the Kindle page. No spaces; use hyphens or underscores.
+- **URL** — the full bookmark URL for this device, with the device name included. Clipped for display — use the copy buttons to get the full value.
+- **⎘ URL** — copies just the bookmark URL to the clipboard
+- **⎘ Config** — copies the complete `shortcut_browser.sh` config block for this device (see below), ready to paste
+- **✕** — removes the device
+
+Click **+ Add Device** to add a new row. The URL and config snippet update live as you type the device name.
+
+> If you only have one Kindle and don't need per-device battery tracking, you can leave the device name blank. All devices without a name share the same `sensor.<location>_battery` entity.
 
 ### Configuration Backup
-Export your dashboard configuration to a JSON file, or import a previously saved one. Importing loads the config into the editor — review it and hit Save to apply. Useful for backing up before making large changes, or copying a config to a new dashboard.
+Export your dashboard configuration to a JSON file, or import a previously saved one. Importing loads the config into the editor — review it and hit Save to apply.
 
 ### General
-- **Dashboard Name** — the name shown in the dashboard picker and the HA integrations list
+- **Dashboard Name** — shown in the dashboard picker and the HA integrations list
 - **Location Name** — displayed in the info bar on the Kindle page
 - **Theme** — Sharp, Soft, Ink, or Minimal
 - **Font** — body font for the Kindle page
 - **Auto-Refresh Interval** — how often entity states are pulled (10–3600 seconds, default 60)
 - **Hard Refresh** — when enabled, the ↺ button on the Kindle reloads the entire page (re-fetches HTML, config, and assets) instead of only updating entity states. Use when changes are not appearing after a config save.
 - **Show clock in top bar** — displays the current time in the black bar at the very top of the Kindle page
-- **Show battery in top bar** — displays the Kindle battery percentage (requires shortcut browser HTTP server setup — see below)
+- **Show battery in top bar** — displays the Kindle battery percentage in the top bar (requires shortcut browser HTTP server setup — see below)
 
 ### Page Dimensions & Text Styling
 
@@ -114,17 +132,25 @@ Click **Save** (floating button, bottom-right) when done. Use **↺ Force Refres
 ## On Your Kindle (must be jailbroken)
 
 1. Install [kindle-shortcut-browser](https://github.com/mitchellurgero/kindle-shortcut-browser)
-2. In `shortcut_browser.sh`, update the config section:
+
+2. In the **Kindle URL** card in the panel, add a device for each Kindle and click **⎘ Config** to copy the ready-to-paste config block for that device. It contains everything below in one step.
+
+   Alternatively, configure `shortcut_browser.sh` manually:
+
 ```sh
+## CONFIG HERE
 GO_FULLSCREEN=true
 FULLSCREEN_SITE="http://<your-ha-ip>:8123/api/kindle_dashboard/kindle/<entry_id>?token=YOUR_TOKEN&device=bedroom-kindle"
 EXTRACHROMEARGS="--kiosk"
+USERAGENT="Mozilla/5.0 (X11; U; Linux armv7l like Android; en-us) AppleWebKit/531.2+ (KHTML, like Gecko) Version/5.0 Safari/533.2+ Kindle/3.0+"
+BROWSERSCALING=1
+## END CONFIG
 ```
-> The full URL including `<entry_id>` is shown in the **Kindle URL** card in the panel.
->
-> The `device=` parameter is optional but **required for per-device battery tracking** when multiple Kindles share a dashboard. Set it to any short identifier with no spaces (e.g. `bedroom-kindle`, `kitchen`). Each device will create its own sensor entity in HA (`sensor.home_battery_bedroom_kindle`) and appear individually in the panel top bar. If omitted, all devices write to the same `sensor.home_battery` entity.
 
-3. Add the following to `shortcut_browser.sh` to enable the battery display and prevent sleep:
+> The `device=` parameter sets the device name shown in the Kindle page footer and is used for per-device battery tracking in HA. Set it to a short identifier with no spaces (e.g. `bedroom-kindle`). If multiple Kindles share a dashboard, each must have a unique device name to get its own battery sensor (`sensor.home_battery_bedroom_kindle`). If omitted, all Kindles write to the same `sensor.home_battery` entity.
+
+3. Add the following to `shortcut_browser.sh` to enable the battery display, battery sensor reporting, and prevent sleep:
+
 ```sh
 ## Kindle Dashboard — battery, sleep prevention, and HTTP server ##
 BAT_FILE="/mnt/us/kbbat"
@@ -163,7 +189,23 @@ BAT_PORT=2024
 BAT_HTTP_PID=$!
 ## End Kindle Dashboard additions ##
 ```
+
 4. Eject the Kindle and launch the Shortcut Browser. It will take a few seconds to launch and then should show the dashboard.
+
+---
+
+## Battery Tracking in Home Assistant
+
+When **Show battery in top bar** is enabled, each Kindle page reads its battery level from the local HTTP server and pushes it to HA as a sensor entity via the REST API. No YAML or HA configuration is needed — the entity is created automatically on first push.
+
+**Entity naming:**
+| Config | Entity ID | Friendly name |
+|---|---|---|
+| `device=bedroom-kindle`, location `Home` | `sensor.home_battery_bedroom_kindle` | Home Battery (bedroom-kindle) |
+| `device=kitchen`, location `Home` | `sensor.home_battery_kitchen` | Home Battery (kitchen) |
+| No device name, location `Home` | `sensor.home_battery` | Home Battery |
+
+The entity has `device_class: battery` and `unit_of_measurement: %`, so it integrates naturally with HA dashboards, automations, and the battery card. Battery level is only pushed when the value changes, so there is no unnecessary network traffic.
 
 ---
 
