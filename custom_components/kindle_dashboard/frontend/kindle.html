@@ -262,8 +262,35 @@ function kbTick(){
   };
   xb.send();
 }
+
+/* ── RELOAD-ON-WAKE ─────────────────────────────────────────────────────
+   Polls port 2025 (served by nc loop in shortcut_browser.sh).
+   When the counter changes (power button woke the device), we do a
+   full hard reload so entity states and config are always fresh.      */
+var _lastReloadToken = null;
+function kbCheckReload() {
+  var xr = new XMLHttpRequest();
+  xr.open("GET", "http://localhost:2025/reload", true);
+  xr.timeout = 1500;
+  xr.onload = function() {
+    if (xr.status !== 200) return;
+    var token = xr.responseText.trim();
+    if (_lastReloadToken === null) {
+      _lastReloadToken = token;   /* first poll — just record, don't reload */
+      return;
+    }
+    if (token !== _lastReloadToken) {
+      _lastReloadToken = token;
+      /* Hard reload: bypass cache so entity states are fresh */
+      window.location.reload(true);
+    }
+  };
+  xr.onerror = xr.ontimeout = function() { /* silent */ };
+  xr.send();
+}
 /* kbTick() called after formatTime is defined — see boot section */
 setInterval(kbTick, 10000);
+setInterval(kbCheckReload, 5000);  /* check for power-button wake every 5s */
 </script>
 
 
@@ -609,6 +636,7 @@ fetchTimezone().then(() => {
   updateClock();
   setInterval(updateClock, 30000);
   kbTick();  // now formatTime is available
+  kbCheckReload();  // record initial reload token
 });
 fetchAll();
 setInterval(fetchAll, 60000);
