@@ -301,8 +301,8 @@ class KindleDashboardPanel extends HTMLElement {
     root.querySelector("#dashboard-name") &&
       (root.querySelector("#dashboard-name").value = cfg.dashboard_name || "");
     const token    = cfg.kindle_token || "";
-    const tokenUrl = token
-      ? `${window.location.origin}/api/kindle_dashboard/kindle?token=${encodeURIComponent(token)}`
+    const tokenUrl = (token && this._activeEntryId)
+      ? `${window.location.origin}/api/kindle_dashboard/kindle/${this._activeEntryId}?token=${encodeURIComponent(token)}`
       : "";
     root.querySelector("#kindle-token").value = token;
     const urlEl = root.querySelector("#token-url-display");
