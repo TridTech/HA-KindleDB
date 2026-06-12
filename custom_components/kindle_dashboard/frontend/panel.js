@@ -82,10 +82,9 @@ class KindleDashboardPanel extends HTMLElement {
         <h1>📱 Kindle Dashboard</h1>
         <span id="topbar-link"></span>
       </div>
-      <div class="save-bar" id="save-bar">
-        <span>Unsaved changes</span>
-        <button id="discard-btn">Discard</button>
-        <button class="primary" id="save-btn">Save</button>
+      <div class="float-save" id="float-save">
+        <button id="discard-btn" class="float-discard" title="Discard changes">✕</button>
+        <button id="save-btn" class="float-save-btn">💾 Save</button>
       </div>
       <div class="content">
 
@@ -439,7 +438,7 @@ class KindleDashboardPanel extends HTMLElement {
         this._loadConfig().then(() => {
           this._syncToDOM();
           this._paintSections();
-          this.shadowRoot.querySelector("#save-bar")?.classList.remove("visible");
+          this.shadowRoot.querySelector("#float-save")?.classList.remove("visible");
         });
         return;
       }
@@ -465,7 +464,7 @@ class KindleDashboardPanel extends HTMLElement {
   }
 
   _markDirty() {
-    this.shadowRoot.querySelector("#save-bar")?.classList.add("visible");
+    this.shadowRoot.querySelector("#float-save")?.classList.add("visible");
   }
 
   // ── COLLECT: read current DOM state into a plain config object ──────────
@@ -627,7 +626,7 @@ class KindleDashboardPanel extends HTMLElement {
     try {
       await this._hass.callWS({ type: "kindle_dashboard/save_config", config: cfg });
       this._config = cfg;
-      this.shadowRoot.querySelector("#save-bar")?.classList.remove("visible");
+      this.shadowRoot.querySelector("#float-save")?.classList.remove("visible");
       this._toast("✓ Saved — reload Kindle page to apply");
       this._paintSections(); // reflect any filtering
     } catch(e) { this._toast("Error saving: " + e.message); }
@@ -649,14 +648,23 @@ class KindleDashboardPanel extends HTMLElement {
     .top-bar h1{font-size:20px;font-weight:500;flex:1}
     .top-bar a{color:inherit;font-size:13px;opacity:.85;text-decoration:none;
       border:1px solid rgba(255,255,255,.5);padding:4px 10px;border-radius:4px;white-space:nowrap}
-    .save-bar{display:none;position:sticky;top:56px;z-index:9;
-      background:var(--warning-color,#ff9800);color:#fff;
-      padding:8px 16px;align-items:center;gap:10px;font-size:13px}
-    .save-bar.visible{display:flex}
-    .save-bar span{flex:1}
-    .save-bar button{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);
-      color:#fff;padding:5px 14px;border-radius:4px;cursor:pointer;font-size:13px}
-    .save-bar button.primary{background:rgba(0,0,0,.18);font-weight:600}
+    .float-save{display:none;position:fixed;bottom:24px;right:24px;
+      z-index:999;align-items:center;gap:8px;
+      filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
+    .float-save.visible{display:flex}
+    .float-save-btn{background:var(--primary-color,#03a9f4);color:#fff;
+      border:none;border-radius:24px;padding:10px 22px;
+      font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.02em;
+      box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .float-save-btn:hover{opacity:.92}
+    .float-save-btn:active{opacity:.8}
+    .float-discard{background:var(--card-background-color,#fff);
+      color:var(--secondary-text-color,#666);
+      border:1px solid var(--divider-color,#ddd);border-radius:50%;
+      width:32px;height:32px;font-size:14px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.12)}
+    .float-discard:hover{background:var(--secondary-background-color,#f5f5f5)}
     .content{padding:16px;max-width:860px;margin:0 auto}
     .card{background:var(--card-background-color,#fff);border-radius:8px;
       box-shadow:0 1px 3px rgba(0,0,0,.12);margin-bottom:16px;overflow:hidden}
