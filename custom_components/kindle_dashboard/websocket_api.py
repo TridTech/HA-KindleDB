@@ -29,6 +29,8 @@ ALLOWED_KEYS = {
     "page_height",
     "page_scale",
     "hard_refresh",
+    "show_clock",
+    "show_battery",
     "theme",
     "label_font_size", "label_bold", "label_italic", "label_underline",
     "sub_font_size",   "sub_bold",   "sub_italic",   "sub_underline",

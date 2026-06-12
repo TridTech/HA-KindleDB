@@ -367,9 +367,9 @@
 </head>
 <body>
 
-<div id="kb-bar">
-  <span id="kb-time">--:--</span>
-  <span id="kb-bat">--%</span>
+<div id="kb-bar" style="display:none">
+  <span id="kb-time" style="display:none">--:--</span>
+  <span id="kb-bat"  style="display:none">--%</span>
 </div>
 <style>
   #kb-bar {
@@ -380,38 +380,51 @@
              font-family: 'Courier New', monospace; font-size: 13px; }
   #kb-bat  { position: absolute; right: 10px; line-height: 28px; color: #ddd;
              font-family: 'Courier New', monospace; font-size: 13px; }
-  /* Push body content below the fixed kb-bar */
-  body { padding-top: 28px; }
 </style>
 <script>
 function pad(n){return n<10?"0"+n:""+n;}
-function kbTick(){
-  /* Use timezone-aware formatTime if available, otherwise fall back */
-  var timeStr;
-  if (typeof formatTime === "function") {
-    timeStr = formatTime(new Date());
-  } else {
-    var d = new Date();
-    timeStr = pad(d.getHours()) + ":" + pad(d.getMinutes());
-  }
-  document.getElementById("kb-time").innerHTML = timeStr;
 
-  /* Battery: fetched from the tiny nc HTTP server running on the Kindle.
-     file:// XHR is blocked by WebKit mixed-content rules when the page
-     is served over http://, so we use a localhost HTTP endpoint instead.
-     Port 2024 is served by the nc loop in shortcut_browser.sh. */
-  var xb = new XMLHttpRequest();
-  xb.open("GET", "http://localhost:2024/bat", true);
-  xb.timeout = 2000;
-  xb.onload = function() {
-    if (xb.status === 200) {
-      document.getElementById("kb-bat").innerHTML = xb.responseText.trim() + "%";
+var _showClock   = (typeof SHOW_CLOCK   !== "undefined") ? SHOW_CLOCK   : true;
+var _showBattery = (typeof SHOW_BATTERY !== "undefined") ? SHOW_BATTERY : false;
+var _barVisible  = _showClock || _showBattery;
+
+/* Show/hide bar and its elements based on config */
+if (_barVisible) {
+  document.getElementById("kb-bar").style.display = "block";
+  document.body.style.paddingTop = "28px";
+}
+if (_showClock)   document.getElementById("kb-time").style.display = "block";
+if (_showBattery) document.getElementById("kb-bat").style.display  = "block";
+
+function kbTick(){
+  if (_showClock) {
+    /* Use timezone-aware formatTime if available, otherwise fall back */
+    var timeStr;
+    if (typeof formatTime === "function") {
+      timeStr = formatTime(new Date());
+    } else {
+      var d = new Date();
+      timeStr = pad(d.getHours()) + ":" + pad(d.getMinutes());
     }
-  };
-  xb.onerror = xb.ontimeout = function() {
-    /* silent — keep last known value rather than flashing "?%" */
-  };
-  xb.send();
+    document.getElementById("kb-time").innerHTML = timeStr;
+  }
+
+  if (_showBattery) {
+    /* Battery: fetched from the tiny nc HTTP server running on the Kindle.
+       Port 2024 is served by the nc loop in shortcut_browser.sh. */
+    var xb = new XMLHttpRequest();
+    xb.open("GET", "http://localhost:2024/bat", true);
+    xb.timeout = 2000;
+    xb.onload = function() {
+      if (xb.status === 200) {
+        document.getElementById("kb-bat").innerHTML = xb.responseText.trim() + "%";
+      }
+    };
+    xb.onerror = xb.ontimeout = function() {
+      /* silent — keep last known value rather than flashing "?%" */
+    };
+    xb.send();
+  }
 }
 
 /* ── RELOAD-ON-WAKE ─────────────────────────────────────────────────────
@@ -444,7 +457,7 @@ function kbCheckReload() {
   xr.send();
 }
 /* kbTick() called after formatTime is defined — see boot section */
-setInterval(kbTick, 10000);
+if (_barVisible) setInterval(kbTick, 10000);
 setInterval(kbCheckReload, 5000);  /* check for power-button wake every 5s */
 </script>
 
@@ -800,7 +813,7 @@ buildAllSections();
 fetchTimezone().then(() => {
   updateClock();
   setInterval(updateClock, 30000);
-  kbTick();  // now formatTime is available
+  if (_barVisible) kbTick();  // now formatTime is available
   kbCheckReload();  // record initial reload token
 });
 fetchAll();

@@ -16,6 +16,8 @@ DEFAULT_PAGE_WIDTH         = 536
 DEFAULT_PAGE_HEIGHT        = 702
 DEFAULT_PAGE_SCALE         = 1.0
 DEFAULT_HARD_REFRESH       = False
+DEFAULT_SHOW_CLOCK         = True
+DEFAULT_SHOW_BATTERY       = False  # requires shortcut_browser.sh setup
 DEFAULT_THEME              = "sharp"
 
 AVAILABLE_THEMES = [

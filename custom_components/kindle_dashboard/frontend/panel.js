@@ -159,6 +159,18 @@ class KindleDashboardPanel extends HTMLElement {
                 <span>Hard refresh <em>(full page reload instead of entity update)</em></span>
               </label>
             </div>
+            <div class="form-row">
+              <label class="opt-row">
+                <input type="checkbox" id="show-clock">
+                <span>Show clock in top bar</span>
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="opt-row">
+                <input type="checkbox" id="show-battery">
+                <span>Show battery in top bar <em>(requires shortcut_browser.sh setup)</em></span>
+              </label>
+            </div>
             <div class="font-style-grid">
               <div class="font-style-row">
                 <label class="fsr-label">Label</label>
@@ -250,7 +262,9 @@ class KindleDashboardPanel extends HTMLElement {
     const themeSel = root.querySelector("#theme-select");
     if (themeSel) themeSel.value = cfg.theme || "sharp";
     // inline-units synced via _paintSections (in sensors sec header)
-    root.querySelector("#hard-refresh").checked = !!cfg.hard_refresh;
+    root.querySelector("#hard-refresh").checked  = !!cfg.hard_refresh;
+    root.querySelector("#show-clock").checked    = cfg.show_clock !== false;
+    root.querySelector("#show-battery").checked  = !!cfg.show_battery;
     root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
     root.querySelector("#page-height").value        = cfg.page_height ?? 800;
     const _scv = cfg.page_scale ?? 1.0;
@@ -447,6 +461,8 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.hard_refresh     = root.querySelector("#hard-refresh")?.checked        || false;
+    cfg.show_clock       = root.querySelector("#show-clock")?.checked          !== false;
+    cfg.show_battery     = root.querySelector("#show-battery")?.checked        || false;
     cfg.theme            = root.querySelector("#theme-select")?.value          || "sharp";
     // inline_units is read from the first sensors section header
     const inlineEl = root.querySelector(".sec-inlineunits");

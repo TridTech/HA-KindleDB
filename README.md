@@ -4,16 +4,21 @@ A Home Assistant custom integration that serves a clean, e-ink–optimised dashb
 
 ## Features
 
-- **Kindle-optimised view** — high-contrast, monospace, large touch targets for controls, compact layout for read-only sensors
+- **Kindle-optimised view** — high-contrast, large touch targets for controls, compact layout for read-only sensors
+- **Four themes** — Sharp (default), Soft, Ink, and Minimal
 - **Flexible sections** — add, remove, and reorder as many sections as you like; each section is one of:
   - **Sensors** — compact read-only tiles, configurable label and unit
   - **Toggles** — large-tap-target rows for lights, switches, fans, covers, locks, etc.
-  - **Scenes** — 2-column grid of tappable scene buttons
+  - **Scenes** — tappable scene buttons, optional 2-column layout
 - **Font picker** — choose from Georgia, Courier New, Times New Roman, Arial, Helvetica, Verdana, Palatino, or Bookman
+- **Per-tier text styling** — independent bold, italic, underline, and size controls for labels, ID/unit text, and sensor values
 - **Inline or stacked units** — show sensor units on the same line as the value (`22 °F`) or on the line below
-- **Light status strip** — dots + count summary of all lights; individual lights can be excluded per-toggle
-- **Sidebar config panel** — full drag-and-drop-free configuration without touching YAML
-- **Auto-refresh** — Kindle page refreshes every 60 seconds; tap ↺ to refresh immediately
+- **Light status strip** — dots + count summary of all lights; individual lights can be excluded per-section
+- **Battery and time bar** — shows Kindle battery level and current time at the top of the page (requires shortcut browser setup below)
+- **Sidebar config panel** — full configuration without touching YAML, including a live entity picker
+- **Force Kindle Refresh** — reload the Kindle page remotely from the HA panel
+- **Hard Refresh mode** — make the on-screen ↺ button do a full page reload instead of just pulling new values
+- **Auto-refresh** — Kindle page refreshes every 60 seconds automatically
 - **Token auth** — long-lived access token embedded in the bookmark URL; no session cookie needed
 
 ---
@@ -40,45 +45,53 @@ Copy `custom_components/kindle_dashboard/` into your HA config's `custom_compone
 
 ## Configuring the Dashboard
 
-Open **Kindle Dashboard** in the sidebar. The config panel has three cards:
+Open **Kindle Dashboard** in the sidebar. The config panel has four cards:
 
 ### Kindle URL
 Generate a Long-Lived Access Token in your HA profile → paste it here → save → bookmark the generated URL on your Kindle.
 
+**Force Kindle Refresh** — the blue button below the URL sends an immediate reload signal to the Kindle page. The Kindle will reload within 5 seconds. Useful after saving config changes without walking over to the device.
+
+### Page Dimensions
+- **Page Width / Height** — set to match your Kindle's screen resolution
+- **Scale** — scales all content proportionally; useful for high-DPI screens
+
 ### General
-- **Location Name** — displayed large in the top bar
+- **Location Name** — displayed in the info bar
+- **Theme** — choose from Sharp, Soft, Ink, or Minimal
 - **Font** — body font for the entire Kindle page
-- **Sensor units** — inline (`22 °F`) or stacked (value on one line, unit below)
+- **Label / ID+Unit / Value font size** — independent size controls with bold, italic, and underline toggles for each tier
+- **Hard Refresh** — when enabled, the ↺ Refresh button on the Kindle does a full page reload (re-fetches HTML, config, and assets) rather than just pulling updated entity values. Useful if you notice stale content after config changes.
 
 ### Sections
-Each section card shows its type badge, a name field, and its items. Use ↑ ↓ to reorder, 🗑 to remove.
+Each section card shows its type badge, a name field, and its items. Use ↑ ↓ to reorder sections and items, 🗑 to remove.
 
 To add a section: pick a type from the dropdown at the bottom of the Sections card and click **+ Add Section**.
 
-**Section types and their item fields:**
+**Section types and their options:**
 
-| Type | Fields per item |
-|---|---|
-| Sensors | Entity (sensor), Label, Unit, Hide from status |
-| Toggles | Icon (emoji), Label, Entity (light/switch/etc.), Hide from status |
-| Scenes | Icon (emoji), Name, Entity (scene) |
+| Type | Options | Item fields |
+|---|---|---|
+| Sensors | Inline Units, Hide IDs | Entity, Label, Unit |
+| Toggles | 2 Columns, Hide IDs | Icon, Entity, Label, Hide from status |
+| Scenes | 2 Columns, Hide IDs | Icon, Entity, Name |
 
-Click **Save** when done. Changes are live on the next Kindle page load (or tap ↺).
+Click **Save** when done. Changes take effect on the next Kindle page load, or use **Force Kindle Refresh** to push them immediately.
 
 ---
 
-## On Your Kindle (must be jailbroken):
+## On Your Kindle (must be jailbroken)
 
 1. Install [kindle-shortcut-browser](https://github.com/mitchellurgero/kindle-shortcut-browser)
-2. In the shortcut_browser.sh config section, make the following changes:
-```
+2. In the `shortcut_browser.sh` config section, make the following changes:
+```sh
 GO_FULLSCREEN=true
 FULLSCREEN_SITE="http://<your-ha-ip>:8123/api/kindle_dashboard/kindle?token=YOUR_TOKEN"
-EXTRACHROMEARGS="--kiosk" # This resovled a few issues with controls sticking around
+EXTRACHROMEARGS="--kiosk"  # Resolves issues with controls sticking around
 ```
-3. Add the following code to the shortcut_browser.sh script.  This allows the dashboard to read the kindle battery level.
-```
-## Adding Battery function in from Claude ##
+3. Add the following code to the `shortcut_browser.sh` script. This enables the battery level display and prevents the Kindle from sleeping while the dashboard is running.
+```sh
+## Kindle Dashboard — battery, sleep prevention, and HTTP server ##
 BAT_FILE="/mnt/us/kbbat"
 
 # ── Battery ───────────────────────────────────────────────────────────────
@@ -86,7 +99,7 @@ BAT=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null | tr -d '[] ')
 [ -z "$BAT" ] && BAT=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -1)
 [ -z "$BAT" ] && BAT="?"
 printf '%s' "$BAT" > "$BAT_FILE"
-#echo "battery: $BAT" >> "$LOG"
+
 ( while true; do
     B=$(lipc-get-prop com.lab126.powerd battLevel 2>/dev/null | tr -d '[] ')
     [ -z "$B" ] && B=$(cat /sys/class/power_supply/*/capacity 2>/dev/null | head -1)
@@ -96,16 +109,15 @@ printf '%s' "$BAT" > "$BAT_FILE"
   done ) &
 BAT_PID=$!
 
-# ── Prevent sleep while dashboard is running ─────────────────────────────────
+# ── Prevent sleep while dashboard is running ─────────────────────────────
 lipc-set-prop -i com.lab126.powerd preventScreenSaver 1
 
-# ── Cleanup on exit: restore sleep ───────────────────────────────────────────
-# This runs when the script exits for any reason (Ctrl-C, kill, etc.)
+# ── Cleanup on exit: restore sleep and kill background jobs ──────────────
 trap 'lipc-set-prop -i com.lab126.powerd preventScreenSaver 0; \
-      kill $BAT_PID $BAT_HTTP_PID $RELOAD_HTTP_PID $RELOAD_WATCH_PID 2>/dev/null' \
+      kill $BAT_PID $BAT_HTTP_PID 2>/dev/null' \
      EXIT INT TERM
 
-# ── HTTP Server for serving battery value ── # 
+# ── HTTP server on port 2024: serves battery value to the dashboard ───────
 BAT_PORT=2024
 ( while true; do
     VAL=$(cat "$BAT_FILE" 2>/dev/null || echo "?")
@@ -114,9 +126,20 @@ BAT_PORT=2024
     echo -e "$RESP" | nc -l -p $BAT_PORT
   done ) &
 BAT_HTTP_PID=$!
-## End Battery Function from Claude ##
+## End Kindle Dashboard additions ##
 ```
-4. Eject the Kindle and launch the Shortcut Browser.  It will take a few seconds to launch, and then should show the dashboard.
+4. Eject the Kindle and launch the Shortcut Browser. It will take a few seconds to launch and then should show the dashboard.
+
+---
+
+## Refresh Behaviour
+
+| Method | What it does |
+|---|---|
+| Auto-refresh (60s) | Pulls fresh entity states; no page reload |
+| ↺ button (normal mode) | Same as auto-refresh, on demand |
+| ↺ button (Hard Refresh enabled) | Full page reload — re-fetches HTML, config, and assets |
+| Force Kindle Refresh (panel button) | Triggers a full page reload on the Kindle within 5 seconds, from your computer |
 
 ---
 
@@ -126,11 +149,12 @@ BAT_HTTP_PID=$!
 custom_components/kindle_dashboard/
 ├── __init__.py          # Integration setup, panel, HTTP view
 ├── config_flow.py       # Setup wizard
-├── const.py             # Constants and default sections
+├── const.py             # Constants and defaults
 ├── manifest.json
 ├── strings.json + translations/en.json
-├── websocket_api.py     # get_config / save_config / get_entities
+├── websocket_api.py     # WebSocket API (get/save config, force refresh)
 └── frontend/
     ├── panel.js         # HA sidebar config panel (web component)
-    └── kindle.html      # Kindle page template
+    ├── kindle.html      # Kindle page template
+    └── mdi-kindle.woff  # Subsetted Material Design Icons font (588 icons)
 ```
