@@ -414,7 +414,12 @@ function kbTick(){
     xb.timeout = 2000;
     xb.onload = function() {
       if (xb.status === 200) {
-        document.getElementById("kb-bat").innerHTML = xb.responseText.trim() + "%";
+        var pct = xb.responseText.trim();
+        document.getElementById("kb-bat").innerHTML = pct + "%";
+        /* Push battery level to HA as a sensor entity.
+           Entity ID is derived from the location name so multiple
+           Kindles don't overwrite each other. */
+        kbPushBattery(pct);
       }
     };
     xb.onerror = xb.ontimeout = function() {
@@ -422,6 +427,55 @@ function kbTick(){
     };
     xb.send();
   }
+}
+
+/* ── KINDLE BATTERY → HA SENSOR ────────────────────────────────────────
+   Pushes the battery level to a HA virtual sensor via the REST API.
+   Uses the same long-lived token as the rest of the dashboard.
+   Entity: sensor.kindle_<location>_battery (spaces→underscores, lowercase)
+   Only fires when _showBattery is true and a valid level is available.   */
+var _lastPushedBattery = null;
+
+function kbPushBattery(pct) {
+  var level = parseInt(pct, 10);
+  if (isNaN(level)) return;
+  /* Only push if the value has changed — saves unnecessary requests */
+  if (level === _lastPushedBattery) return;
+  _lastPushedBattery = level;
+
+  /* Derive a stable entity ID from the location name */
+  var loc = (typeof LOCATION !== "undefined" ? LOCATION : "kindle")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  var entityId = "sensor." + loc + "_battery";
+
+  var icon = level >= 90 ? "mdi:battery"
+           : level >= 80 ? "mdi:battery-90"
+           : level >= 70 ? "mdi:battery-80"
+           : level >= 60 ? "mdi:battery-70"
+           : level >= 50 ? "mdi:battery-60"
+           : level >= 40 ? "mdi:battery-50"
+           : level >= 30 ? "mdi:battery-40"
+           : level >= 20 ? "mdi:battery-30"
+           : level >= 10 ? "mdi:battery-20"
+           :               "mdi:battery-alert";
+
+  var payload = JSON.stringify({
+    state: String(level),
+    attributes: {
+      unit_of_measurement: "%",
+      device_class: "battery",
+      friendly_name: (typeof LOCATION !== "undefined" ? LOCATION : "Kindle") + " Battery",
+      icon: icon,
+    }
+  });
+
+  var xp = new XMLHttpRequest();
+  xp.open("POST", HA_URL + "/api/states/" + entityId, true);
+  xp.setRequestHeader("Content-Type", "application/json");
+  xp.setRequestHeader("Authorization", "Bearer " + HA_TOKEN);
+  xp.timeout = 3000;
+  /* silent on error — battery push is best-effort */
+  xp.send(payload);
 }
 
 /* ── RELOAD-ON-WAKE ─────────────────────────────────────────────────────
