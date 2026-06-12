@@ -263,8 +263,10 @@ class KindleDashboardPanel extends HTMLElement {
     if (themeSel) themeSel.value = cfg.theme || "sharp";
     // inline-units synced via _paintSections (in sensors sec header)
     root.querySelector("#hard-refresh").checked  = !!cfg.hard_refresh;
-    root.querySelector("#show-clock").checked    = cfg.show_clock !== false;
-    root.querySelector("#show-battery").checked  = !!cfg.show_battery;
+    const _sc = root.querySelector("#show-clock");
+    if (_sc) _sc.checked = cfg.show_clock !== false;
+    const _sb = root.querySelector("#show-battery");
+    if (_sb) _sb.checked = !!cfg.show_battery;
     root.querySelector("#page-width").value         = cfg.page_width  ?? 600;
     root.querySelector("#page-height").value        = cfg.page_height ?? 800;
     const _scv = cfg.page_scale ?? 1.0;
