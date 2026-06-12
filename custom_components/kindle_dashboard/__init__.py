@@ -1,4 +1,4 @@
-"""Kindle Dashboard — custom integration for Home Assistant."""
+"""Kindle Dashboard — supports multiple dashboard instances."""
 from __future__ import annotations
 
 import json
@@ -11,35 +11,37 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import (
+    CONF_DASHBOARD_NAME,
     CONF_FONT,
     CONF_HIDE_ENTITY_NAMES,
     CONF_INLINE_UNITS,
     CONF_LOCATION_NAME,
     CONF_SECTIONS,
+    CONFIG_VERSION,
     DEFAULT_FONT,
+    DEFAULT_HARD_REFRESH,
     DEFAULT_HIDE_ENTITY_NAMES,
     DEFAULT_INLINE_UNITS,
     DEFAULT_LABEL_BOLD,
     DEFAULT_LABEL_FONT_SIZE,
     DEFAULT_LABEL_ITALIC,
     DEFAULT_LABEL_UNDERLINE,
+    DEFAULT_LOCATION_NAME,
     DEFAULT_PAGE_HEIGHT,
-    DEFAULT_HARD_REFRESH,
-    DEFAULT_THEME,
     DEFAULT_PAGE_SCALE,
     DEFAULT_PAGE_WIDTH,
+    DEFAULT_SECTIONS,
+    DEFAULT_SHOW_BATTERY,
+    DEFAULT_SHOW_CLOCK,
     DEFAULT_SUB_BOLD,
     DEFAULT_SUB_FONT_SIZE,
     DEFAULT_SUB_ITALIC,
     DEFAULT_SUB_UNDERLINE,
+    DEFAULT_THEME,
     DEFAULT_VALUE_BOLD,
     DEFAULT_VALUE_FONT_SIZE,
     DEFAULT_VALUE_ITALIC,
     DEFAULT_VALUE_UNDERLINE,
-    DEFAULT_LOCATION_NAME,
-    DEFAULT_SECTIONS,
-    DEFAULT_SHOW_BATTERY,
-    DEFAULT_SHOW_CLOCK,
     DOMAIN,
 )
 from . import websocket_api
@@ -58,14 +60,15 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry
-    hass.data[DOMAIN].setdefault("_reload_counter", 0)
+    hass.data[DOMAIN].setdefault("_reload_counters", {})
+    hass.data[DOMAIN]["_reload_counters"].setdefault(entry.entry_id, 0)
 
-    frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
-    await hass.http.async_register_static_paths(
-        [StaticPathConfig(STATIC_URL, frontend_path, cache_headers=False)]
-    )
-
-    if DOMAIN not in hass.data.get("frontend_panels", {}):
+    # Register static files and panel only once (first entry)
+    if not hass.data[DOMAIN].get("_panel_registered"):
+        frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
+        await hass.http.async_register_static_paths(
+            [StaticPathConfig(STATIC_URL, frontend_path, cache_headers=False)]
+        )
         try:
             from homeassistant.components import panel_custom
             await panel_custom.async_register_panel(
@@ -78,12 +81,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 embed_iframe=False,
                 require_admin=False,
             )
+            hass.data[DOMAIN]["_panel_registered"] = True
         except Exception:
             _LOGGER.exception("Failed to register Kindle Dashboard panel")
 
+        # Register HTTP views once
+        hass.http.register_view(KindleView(hass))
+        hass.http.register_view(KindleReloadView(hass))
+
     websocket_api.async_setup(hass)
-    hass.http.register_view(KindleView(hass))
-    hass.http.register_view(KindleReloadView(hass))
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True
 
@@ -94,25 +100,30 @@ async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> Non
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN].pop(entry.entry_id, None)
+    hass.data[DOMAIN].get("_reload_counters", {}).pop(entry.entry_id, None)
     return True
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    from .const import CONFIG_VERSION
-    _LOGGER.debug("Migrating Kindle Dashboard config from v%s to v%s",
+    """Migrate old config entries — preserves all user data."""
+    _LOGGER.debug("Migrating Kindle Dashboard from v%s to v%s",
                   entry.version, CONFIG_VERSION)
     data    = {**entry.data}
     options = {**entry.options}
+
     if entry.version < 2:
         for store in (data, options):
             store.setdefault(CONF_FONT,             DEFAULT_FONT)
             store.setdefault(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
             store.setdefault(CONF_HIDE_ENTITY_NAMES,DEFAULT_HIDE_ENTITY_NAMES)
-            if CONF_SECTIONS not in store and any(
-                k in store for k in ("scenes", "toggles", "stats")
-            ):
+            if CONF_SECTIONS not in store:
                 store[CONF_SECTIONS] = DEFAULT_SECTIONS
-            store.setdefault(CONF_SECTIONS, DEFAULT_SECTIONS)
+
+    if entry.version < 3:
+        # Add dashboard_name from entry title (or default)
+        for store in (data, options):
+            store.setdefault(CONF_DASHBOARD_NAME, entry.title or "Kindle Dashboard")
+
     hass.config_entries.async_update_entry(
         entry, data=data, options=options, version=CONFIG_VERSION
     )
@@ -120,21 +131,21 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _merged_config(entry: ConfigEntry) -> dict:
-    """Merge entry data + options over defaults so new keys always have a value."""
+    """Merge entry data + options over defaults. New keys always have a value."""
     base = {
         CONF_LOCATION_NAME:     DEFAULT_LOCATION_NAME,
         CONF_SECTIONS:          DEFAULT_SECTIONS,
         CONF_FONT:              DEFAULT_FONT,
         CONF_INLINE_UNITS:      DEFAULT_INLINE_UNITS,
         CONF_HIDE_ENTITY_NAMES: DEFAULT_HIDE_ENTITY_NAMES,
+        CONF_DASHBOARD_NAME:    entry.title or "Kindle Dashboard",
         "page_width":           DEFAULT_PAGE_WIDTH,
         "page_height":          DEFAULT_PAGE_HEIGHT,
-        "hard_refresh":         DEFAULT_HARD_REFRESH,
+        "page_scale":           DEFAULT_PAGE_SCALE,
         "hard_refresh":         DEFAULT_HARD_REFRESH,
         "show_clock":           DEFAULT_SHOW_CLOCK,
         "show_battery":         DEFAULT_SHOW_BATTERY,
         "theme":                DEFAULT_THEME,
-        "page_scale":           DEFAULT_PAGE_SCALE,
         "label_font_size":      DEFAULT_LABEL_FONT_SIZE,
         "label_bold":           DEFAULT_LABEL_BOLD,
         "label_italic":         DEFAULT_LABEL_ITALIC,
@@ -150,55 +161,68 @@ def _merged_config(entry: ConfigEntry) -> dict:
     }
     base.update(entry.data)
     base.update(entry.options)
+    # Always expose entry_id so the panel can use it
+    base["entry_id"] = entry.entry_id
     return base
 
 
-class KindleView(HomeAssistantView):
-    """Serve the Kindle dashboard HTML at /api/kindle_dashboard/kindle."""
+def bump_reload_counter(hass: HomeAssistant, entry_id: str) -> int:
+    counters = hass.data.get(DOMAIN, {}).get("_reload_counters", {})
+    counters[entry_id] = counters.get(entry_id, 0) + 1
+    return counters[entry_id]
 
-    url = "/api/kindle_dashboard/kindle"
+
+class KindleView(HomeAssistantView):
+    """Serve a dashboard at /api/kindle_dashboard/kindle/{entry_id}?token=..."""
+
+    url  = "/api/kindle_dashboard/kindle/{entry_id}"
     name = "api:kindle_dashboard:kindle"
     requires_auth = False
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
 
-    async def get(self, request: Any) -> Any:
+    async def get(self, request: Any, entry_id: str) -> Any:
         from aiohttp.web import Response
 
         token = request.rel_url.query.get("token", "").strip()
         if not token:
             return Response(text=_NO_TOKEN_PAGE, content_type="text/html", charset="utf-8")
 
-        entries = self.hass.config_entries.async_entries(DOMAIN)
-        if not entries:
-            return Response(text="Kindle Dashboard integration is not set up.", status=503)
+        # Find the entry
+        entry = None
+        for e in self.hass.config_entries.async_entries(DOMAIN):
+            if e.entry_id == entry_id:
+                entry = e
+                break
 
-        cfg = _merged_config(entries[0])
+        if entry is None:
+            return Response(text="Dashboard not found.", status=404)
 
-        location        = cfg.get(CONF_LOCATION_NAME,    DEFAULT_LOCATION_NAME)
-        sections        = cfg.get(CONF_SECTIONS,         DEFAULT_SECTIONS)
-        font            = cfg.get(CONF_FONT,             DEFAULT_FONT)
-        inline_units    = cfg.get(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
-        page_width      = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
-        page_height     = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
-        hard_refresh    = cfg.get("hard_refresh",      DEFAULT_HARD_REFRESH)
-        show_clock      = cfg.get("show_clock",         DEFAULT_SHOW_CLOCK)
-        show_battery    = cfg.get("show_battery",       DEFAULT_SHOW_BATTERY)
-        theme           = cfg.get("theme",             DEFAULT_THEME)
-        page_scale      = float(cfg.get("page_scale",     DEFAULT_PAGE_SCALE))
-        label_font_size = cfg.get("label_font_size",     DEFAULT_LABEL_FONT_SIZE)
-        label_bold      = cfg.get("label_bold",          DEFAULT_LABEL_BOLD)
-        label_italic    = cfg.get("label_italic",        DEFAULT_LABEL_ITALIC)
-        label_underline = cfg.get("label_underline",     DEFAULT_LABEL_UNDERLINE)
-        sub_font_size   = cfg.get("sub_font_size",       DEFAULT_SUB_FONT_SIZE)
-        sub_bold        = cfg.get("sub_bold",            DEFAULT_SUB_BOLD)
-        sub_italic      = cfg.get("sub_italic",          DEFAULT_SUB_ITALIC)
-        sub_underline   = cfg.get("sub_underline",       DEFAULT_SUB_UNDERLINE)
-        value_font_size = cfg.get("value_font_size",     DEFAULT_VALUE_FONT_SIZE)
-        value_bold      = cfg.get("value_bold",          DEFAULT_VALUE_BOLD)
-        value_italic    = cfg.get("value_italic",        DEFAULT_VALUE_ITALIC)
-        value_underline = cfg.get("value_underline",     DEFAULT_VALUE_UNDERLINE)
+        cfg              = _merged_config(entry)
+        location         = cfg.get(CONF_LOCATION_NAME,    DEFAULT_LOCATION_NAME)
+        sections         = cfg.get(CONF_SECTIONS,         DEFAULT_SECTIONS)
+        font             = cfg.get(CONF_FONT,             DEFAULT_FONT)
+        inline_units     = cfg.get(CONF_INLINE_UNITS,     DEFAULT_INLINE_UNITS)
+        page_width       = int(cfg.get("page_width",      DEFAULT_PAGE_WIDTH))
+        page_height      = int(cfg.get("page_height",     DEFAULT_PAGE_HEIGHT))
+        page_scale       = float(cfg.get("page_scale",    DEFAULT_PAGE_SCALE))
+        hard_refresh     = cfg.get("hard_refresh",        DEFAULT_HARD_REFRESH)
+        show_clock       = cfg.get("show_clock",          DEFAULT_SHOW_CLOCK)
+        show_battery     = cfg.get("show_battery",        DEFAULT_SHOW_BATTERY)
+        theme            = cfg.get("theme",               DEFAULT_THEME)
+        label_font_size  = cfg.get("label_font_size",     DEFAULT_LABEL_FONT_SIZE)
+        label_bold       = cfg.get("label_bold",          DEFAULT_LABEL_BOLD)
+        label_italic     = cfg.get("label_italic",        DEFAULT_LABEL_ITALIC)
+        label_underline  = cfg.get("label_underline",     DEFAULT_LABEL_UNDERLINE)
+        sub_font_size    = cfg.get("sub_font_size",       DEFAULT_SUB_FONT_SIZE)
+        sub_bold         = cfg.get("sub_bold",            DEFAULT_SUB_BOLD)
+        sub_italic       = cfg.get("sub_italic",          DEFAULT_SUB_ITALIC)
+        sub_underline    = cfg.get("sub_underline",       DEFAULT_SUB_UNDERLINE)
+        value_font_size  = cfg.get("value_font_size",     DEFAULT_VALUE_FONT_SIZE)
+        value_bold       = cfg.get("value_bold",          DEFAULT_VALUE_BOLD)
+        value_italic     = cfg.get("value_italic",        DEFAULT_VALUE_ITALIC)
+        value_underline  = cfg.get("value_underline",     DEFAULT_VALUE_UNDERLINE)
 
         template_path = os.path.join(os.path.dirname(__file__), "frontend", "kindle.html")
         with open(template_path, "r", encoding="utf-8") as f:
@@ -206,18 +230,19 @@ class KindleView(HomeAssistantView):
 
         injected = (
             f"const PAGE_WIDTH       = {json.dumps(page_width)};\n"
+            f"const PAGE_HEIGHT      = {json.dumps(page_height)};\n"
+            f"const PAGE_SCALE       = {json.dumps(page_scale)};\n"
             f"const HA_URL           = window.location.origin;\n"
             f"const HA_TOKEN         = {json.dumps(token)};\n"
+            f"const ENTRY_ID         = {json.dumps(entry_id)};\n"
             f"const LOCATION         = {json.dumps(location)};\n"
             f"const SECTIONS         = {json.dumps(sections)};\n"
             f"const BODY_FONT        = {json.dumps(font)};\n"
             f"const INLINE_UNITS     = {json.dumps(inline_units)};\n"
-            f"const PAGE_HEIGHT      = {json.dumps(page_height)};\n"
             f"const HARD_REFRESH     = {json.dumps(hard_refresh)};\n"
-            f"const SHOW_CLOCK      = {json.dumps(show_clock)};\n"
-            f"const SHOW_BATTERY    = {json.dumps(show_battery)};\n"
+            f"const SHOW_CLOCK       = {json.dumps(show_clock)};\n"
+            f"const SHOW_BATTERY     = {json.dumps(show_battery)};\n"
             f"const THEME            = {json.dumps(theme)};\n"
-            f"const PAGE_SCALE       = {json.dumps(page_scale)};\n"
             f"const LABEL_FONT_SIZE  = {json.dumps(label_font_size)};\n"
             f"const LABEL_BOLD       = {json.dumps(label_bold)};\n"
             f"const LABEL_ITALIC     = {json.dumps(label_italic)};\n"
@@ -239,34 +264,24 @@ class KindleView(HomeAssistantView):
         return Response(text=html, content_type="text/html", charset="utf-8")
 
 
-def bump_reload_counter(hass) -> int:
-    """Increment the in-memory reload counter and return the new value."""
-    hass.data[DOMAIN]["_reload_counter"] = \
-        hass.data[DOMAIN].get("_reload_counter", 0) + 1
-    return hass.data[DOMAIN]["_reload_counter"]
-
-
 class KindleReloadView(HomeAssistantView):
-    """Serve the current reload counter at /api/kindle_dashboard/reload.
+    """Serve the reload counter at /api/kindle_dashboard/reload/{entry_id}?token=..."""
 
-    The Kindle page polls this endpoint; when the counter changes it
-    calls window.location.reload(true).
-    Requires ?token= for the same reason as KindleView.
-    """
-
-    url = "/api/kindle_dashboard/reload"
+    url  = "/api/kindle_dashboard/reload/{entry_id}"
     name = "api:kindle_dashboard:reload"
     requires_auth = False
 
-    def __init__(self, hass) -> None:
+    def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
 
-    async def get(self, request: Any) -> Any:
+    async def get(self, request: Any, entry_id: str) -> Any:
         from aiohttp.web import Response
         token = request.rel_url.query.get("token", "").strip()
         if not token:
             return Response(text="token required", status=401)
-        counter = self.hass.data.get(DOMAIN, {}).get("_reload_counter", 0)
+        counter = self.hass.data.get(DOMAIN, {}).get(
+            "_reload_counters", {}
+        ).get(entry_id, 0)
         return Response(
             text=str(counter),
             content_type="text/plain",
@@ -276,11 +291,11 @@ class KindleReloadView(HomeAssistantView):
 
 _NO_TOKEN_PAGE = """<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
-<meta name="viewport" content="width=600,initial-scale=1">
+<meta name="viewport" content="width=536,initial-scale=1">
 <title>Kindle Dashboard — Setup</title>
 <style>
   body{font-family:'Courier New',monospace;background:#fff;color:#000;
-       padding:24px;width:600px;line-height:1.6}
+       padding:24px;line-height:1.6}
   h1{font-size:18px;border-bottom:3px solid #000;padding-bottom:8px;margin-bottom:16px}
   ol{padding-left:20px} li{margin-bottom:10px}
   code{background:#eee;padding:2px 6px;font-size:13px;word-break:break-all}
@@ -291,9 +306,7 @@ _NO_TOKEN_PAGE = """<!DOCTYPE html>
 <ol>
   <li>In Home Assistant, click your profile (bottom-left avatar).</li>
   <li>Scroll to <strong>Long-Lived Access Tokens</strong> and create one named <em>Kindle</em>.</li>
-  <li>Bookmark this URL on your Kindle:<br><br>
-      <code>http://&lt;HA-IP&gt;:8123/api/kindle_dashboard/kindle?token=PASTE_TOKEN_HERE</code>
-  </li>
+  <li>The Kindle Dashboard panel in HA shows the correct pre-filled URL for each dashboard.</li>
 </ol>
-<div class="box">The Kindle Dashboard panel in the HA sidebar shows a pre-filled URL once a token is saved.</div>
+<div class="box">Each dashboard has its own URL containing its unique ID.</div>
 </body></html>"""

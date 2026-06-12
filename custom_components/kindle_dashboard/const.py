@@ -2,30 +2,17 @@
 
 DOMAIN = "kindle_dashboard"
 
-CONF_LOCATION_NAME  = "location_name"
-CONF_SECTIONS       = "sections"
-CONF_FONT           = "font"
-CONF_INLINE_UNITS   = "inline_units"
+CONF_LOCATION_NAME     = "location_name"
+CONF_SECTIONS          = "sections"
+CONF_FONT              = "font"
+CONF_INLINE_UNITS      = "inline_units"
 CONF_HIDE_ENTITY_NAMES = "hide_entity_names"
+CONF_DASHBOARD_NAME    = "dashboard_name"
 
 DEFAULT_LOCATION_NAME      = "Home"
 DEFAULT_FONT               = "Georgia, serif"
 DEFAULT_INLINE_UNITS       = False
 DEFAULT_HIDE_ENTITY_NAMES  = False
-DEFAULT_PAGE_WIDTH         = 536
-DEFAULT_PAGE_HEIGHT        = 702
-DEFAULT_PAGE_SCALE         = 1.0
-DEFAULT_HARD_REFRESH       = False
-DEFAULT_SHOW_CLOCK         = True
-DEFAULT_SHOW_BATTERY       = False  # requires shortcut_browser.sh setup
-DEFAULT_THEME              = "sharp"
-
-AVAILABLE_THEMES = [
-    {"value": "sharp",   "label": "Sharp (default) — hard edges, max contrast"},
-    {"value": "soft",    "label": "Soft — rounded corners, lighter borders"},
-    {"value": "ink",     "label": "Ink — editorial, whitespace-forward"},
-    {"value": "minimal", "label": "Minimal — near-invisible borders, dense"},
-]
 DEFAULT_LABEL_FONT_SIZE    = 13
 DEFAULT_LABEL_BOLD         = False
 DEFAULT_LABEL_ITALIC       = False
@@ -38,26 +25,25 @@ DEFAULT_VALUE_FONT_SIZE    = 18
 DEFAULT_VALUE_BOLD         = True
 DEFAULT_VALUE_ITALIC       = False
 DEFAULT_VALUE_UNDERLINE    = False
+DEFAULT_PAGE_WIDTH         = 536
+DEFAULT_PAGE_HEIGHT        = 722
+DEFAULT_PAGE_SCALE         = 1.0
+DEFAULT_HARD_REFRESH       = False
+DEFAULT_SHOW_CLOCK         = True
+DEFAULT_SHOW_BATTERY       = False
+DEFAULT_THEME              = "sharp"
 
-SECTION_TYPE_SENSORS = "sensors"
-SECTION_TYPE_TOGGLES = "toggles"
-SECTION_TYPE_SCENES  = "scenes"
-
-AVAILABLE_FONTS = [
-    {"label": "Georgia (default)",   "value": "Georgia, serif"},
-    {"label": "Courier New",         "value": "'Courier New', monospace"},
-    {"label": "Times New Roman",     "value": "'Times New Roman', serif"},
-    {"label": "Arial",               "value": "Arial, sans-serif"},
-    {"label": "Helvetica",           "value": "Helvetica, sans-serif"},
-    {"label": "Verdana",             "value": "Verdana, sans-serif"},
-    {"label": "Palatino",            "value": "Palatino, serif"},
-    {"label": "Bookman",             "value": "Bookman, serif"},
+AVAILABLE_THEMES = [
+    {"value": "sharp",   "label": "Sharp (default)"},
+    {"value": "soft",    "label": "Soft"},
+    {"value": "ink",     "label": "Ink"},
+    {"value": "minimal", "label": "Minimal"},
 ]
 
 DEFAULT_SECTIONS = [
     {
         "id": "s_status",
-        "type": SECTION_TYPE_SENSORS,
+        "type": "sensors",
         "label": "Status",
         "items": [
             {"id": "sensor.indoor_temperature",  "label": "Indoor",  "unit": "°F"},
@@ -67,27 +53,24 @@ DEFAULT_SECTIONS = [
     },
     {
         "id": "s_scenes",
-        "type": SECTION_TYPE_SCENES,
+        "type": "scenes",
         "label": "Scenes",
         "items": [
-            {"icon": "🌙", "name": "All Off",  "desc": "All lights off", "entity": "scene.all_lights_off"},
-            {"icon": "☀️",  "name": "All On",   "desc": "All lights on",  "entity": "scene.all_lights_on"},
-            {"icon": "🕯",  "name": "Evening",  "desc": "Warm & dim",     "entity": "scene.evening"},
-            {"icon": "💡", "name": "Focus",    "desc": "Bright white",    "entity": "scene.focus"},
+            {"icon": "weather-night", "name": "All Off",  "desc": "All lights off", "entity": "scene.all_lights_off"},
+            {"icon": "weather-sunny", "name": "All On",   "desc": "All lights on",  "entity": "scene.all_lights_on"},
         ],
     },
     {
         "id": "s_lights",
-        "type": SECTION_TYPE_TOGGLES,
-        "label": "Lights & Switches",
+        "type": "toggles",
+        "label": "Lights",
         "two_columns": False,
         "items": [
-            {"id": "light.living_room", "icon": "🛋",  "label": "Living Room", "hide_from_status": False},
-            {"id": "light.kitchen",     "icon": "🍳",  "label": "Kitchen",     "hide_from_status": False},
-            {"id": "light.bedroom",     "icon": "🛏",  "label": "Bedroom",     "hide_from_status": False},
+            {"id": "light.living_room", "icon": "lightbulb", "label": "Living Room", "hide_from_status": False},
+            {"id": "light.kitchen",     "icon": "lightbulb", "label": "Kitchen",     "hide_from_status": False},
         ],
     },
 ]
 
-# Current config schema version — bump when adding new top-level keys
-CONFIG_VERSION = 2
+# Bump when adding new top-level keys requiring migration
+CONFIG_VERSION = 3

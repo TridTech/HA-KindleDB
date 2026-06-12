@@ -43,6 +43,7 @@ class KindleDashboardPanel extends HTMLElement {
     this._entities = [];
     this._mounted      = false;
     this._initializing = false;
+    this._activeEntryId = null;  // which dashboard is being edited
   }
 
   set hass(hass) {
@@ -54,6 +55,7 @@ class KindleDashboardPanel extends HTMLElement {
   async _init() {
     this._initializing = true;
     try {
+      await this._loadDashboards();
       await Promise.all([this._loadConfig(), this._loadEntities()]);
       this._mount();
     } finally {
@@ -61,9 +63,24 @@ class KindleDashboardPanel extends HTMLElement {
     }
   }
 
+  async _loadDashboards() {
+    try {
+      const res = await this._hass.callWS({ type: "kindle_dashboard/get_dashboards" });
+      this._dashboards = res.dashboards || [];
+      // Default to first dashboard if none selected
+      if (!this._activeEntryId && this._dashboards.length > 0) {
+        this._activeEntryId = this._dashboards[0].entry_id;
+      }
+    } catch(e) { this._dashboards = []; }
+  }
+
   async _loadConfig() {
-    try { this._config = await this._hass.callWS({ type: "kindle_dashboard/get_config" }); }
-    catch(e) { this._config = {}; }
+    try {
+      this._config = await this._hass.callWS({
+        type: "kindle_dashboard/get_config",
+        entry_id: this._activeEntryId,
+      });
+    } catch(e) { this._config = {}; }
   }
 
   async _loadEntities() {
@@ -80,6 +97,7 @@ class KindleDashboardPanel extends HTMLElement {
     this.shadowRoot.innerHTML = `<style>${this._css()}</style>
       <div class="top-bar">
         <h1>📱 Kindle Dashboard</h1>
+        <select id="dashboard-picker" class="dash-picker"></select>
         <span id="topbar-link"></span>
       </div>
       <div class="float-save" id="float-save">
@@ -159,9 +177,15 @@ class KindleDashboardPanel extends HTMLElement {
         <div class="card" id="card-general">
           <div class="card-header"><span class="icon">⚙️</span> General</div>
           <div class="card-body">
-            <div class="form-row">
-              <label>Location Name</label>
-              <input type="text" id="location-name" placeholder="Home">
+            <div class="form-row two-col">
+              <div>
+                <label>Dashboard Name</label>
+                <input type="text" id="dashboard-name" placeholder="Kindle Dashboard">
+              </div>
+              <div>
+                <label>Location Name</label>
+                <input type="text" id="location-name" placeholder="Home">
+              </div>
             </div>
             <div class="form-row two-col">
               <div>
@@ -266,6 +290,16 @@ class KindleDashboardPanel extends HTMLElement {
     const root = this.shadowRoot;
 
     // Token & URL
+    // Populate dashboard picker
+    const picker = root.querySelector("#dashboard-picker");
+    if (picker) {
+      picker.innerHTML = (this._dashboards || []).map(d =>
+        `<option value="${d.entry_id}"${d.entry_id === this._activeEntryId ? " selected" : ""}>
+          ${d.title}</option>`
+      ).join("");
+    }
+    root.querySelector("#dashboard-name") &&
+      (root.querySelector("#dashboard-name").value = cfg.dashboard_name || "");
     const token    = cfg.kindle_token || "";
     const tokenUrl = token
       ? `${window.location.origin}/api/kindle_dashboard/kindle?token=${encodeURIComponent(token)}`
@@ -422,6 +456,15 @@ class KindleDashboardPanel extends HTMLElement {
     });
     root.addEventListener("change", (e) => {
       this._markDirty();
+      if (e.target.id === "dashboard-picker") {
+        this._activeEntryId = e.target.value;
+        this._config = null;
+        this._loadConfig().then(() => {
+          this._syncToDOM();
+          this._paintSections();
+        });
+        return;
+      }
       if (e.target.id === "font-select") {
         if (!this._config) this._config = {};
         this._config.font = e.target.value;
@@ -497,6 +540,7 @@ class KindleDashboardPanel extends HTMLElement {
     const root = this.shadowRoot;
     const cfg  = Object.assign({}, this._config || {});
 
+    cfg.dashboard_name   = root.querySelector("#dashboard-name")?.value.trim() || "Kindle Dashboard";
     cfg.location_name    = root.querySelector("#location-name")?.value.trim() || "Home";
     cfg.kindle_token     = root.querySelector("#kindle-token")?.value.trim()  || "";
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
@@ -558,7 +602,10 @@ class KindleDashboardPanel extends HTMLElement {
     btn.disabled = true;
     hint.textContent = "Sending…";
     try {
-      const res = await this._hass.callWS({ type: "kindle_dashboard/force_refresh" });
+      const res = await this._hass.callWS({
+        type: "kindle_dashboard/force_refresh",
+        entry_id: this._activeEntryId,
+      });
       hint.textContent = "✓ Kindle will reload within 5 seconds (counter: " + res.counter + ")";
       setTimeout(() => { hint.textContent = ""; btn.disabled = false; }, 5000);
     } catch(e) {
@@ -688,7 +735,14 @@ class KindleDashboardPanel extends HTMLElement {
       );
     });
     try {
-      await this._hass.callWS({ type: "kindle_dashboard/save_config", config: cfg });
+      await this._hass.callWS({
+        type: "kindle_dashboard/save_config",
+        entry_id: this._activeEntryId,
+        config: cfg,
+      });
+      // Refresh dashboard list (name may have changed)
+      await this._loadDashboards();
+      this._syncToDOM();
       this._config = cfg;
       this.shadowRoot.querySelector("#float-save")?.classList.remove("visible");
       this._toast("✓ Saved — reload Kindle page to apply");
@@ -710,6 +764,10 @@ class KindleDashboardPanel extends HTMLElement {
       display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;
       box-shadow:0 2px 4px rgba(0,0,0,.18)}
     .top-bar h1{font-size:20px;font-weight:500;flex:1}
+    .dash-picker{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);
+      color:#fff;padding:4px 8px;border-radius:4px;font-size:13px;
+      max-width:180px;cursor:pointer}
+    .dash-picker option{background:#333;color:#fff}
     .top-bar a{color:inherit;font-size:13px;opacity:.85;text-decoration:none;
       border:1px solid rgba(255,255,255,.5);padding:4px 10px;border-radius:4px;white-space:nowrap}
     .float-save{display:none;position:fixed;bottom:24px;right:24px;

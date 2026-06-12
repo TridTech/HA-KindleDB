@@ -2,22 +2,21 @@
   "config": {
     "step": {
       "user": {
-        "title": "Kindle Dashboard Setup",
-        "description": "Set up your Kindle-optimised Home Assistant dashboard. After setup, open the **Kindle Dashboard** item in the sidebar to configure scenes, toggles and sensors.",
+        "title": "Add Kindle Dashboard",
+        "description": "Set up a new Kindle dashboard. You can add multiple dashboards, each with its own URL, layout, and settings.",
         "data": {
+          "dashboard_name": "Dashboard Name",
           "location_name": "Location Name"
         }
       }
     },
-    "abort": {
-      "single_instance_allowed": "Only one Kindle Dashboard instance is allowed."
-    }
+    "abort": {}
   },
   "options": {
     "step": {
       "init": {
         "title": "Kindle Dashboard Options",
-        "description": "For full configuration (scenes, toggles, sensors), open the **Kindle Dashboard** panel in the sidebar. Here you can update the location name shown on the Kindle.",
+        "description": "For full configuration open the **Kindle Dashboard** panel in the sidebar.",
         "data": {
           "location_name": "Location Name"
         }

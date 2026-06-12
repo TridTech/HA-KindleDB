@@ -432,10 +432,11 @@ var _lastReloadToken = null;
 function kbCheckReload() {
   /* Poll the HA reload endpoint using the same token as the page URL.
    When the counter changes (bumped from the panel), reload the page. */
-  var _token = (typeof HA_TOKEN !== "undefined") ? HA_TOKEN : "";
+  var _token   = (typeof HA_TOKEN   !== "undefined") ? HA_TOKEN   : "";
+  var _entryId = (typeof ENTRY_ID   !== "undefined") ? ENTRY_ID   : "";
   var xr = new XMLHttpRequest();
-  xr.open("GET", HA_URL + "/api/kindle_dashboard/reload?token=" +
-          encodeURIComponent(_token), true);
+  xr.open("GET", HA_URL + "/api/kindle_dashboard/reload/" + _entryId +
+          "?token=" + encodeURIComponent(_token), true);
   xr.timeout = 3000;
   xr.onload = function() {
     if (xr.status !== 200) return;
