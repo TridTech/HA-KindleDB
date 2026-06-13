@@ -504,7 +504,7 @@ class KindleDashboardPanel extends HTMLElement {
 
   // ── LISTENERS — wired once in _mount ────────────────────────────────────
 
-  _buildConfigSnippet(fullUrl) {
+  _buildConfigSnippet(fullUrl, preventSleep) {
     return [
       "## CONFIG HERE",
       "GO_FULLSCREEN=true",
@@ -528,12 +528,27 @@ class KindleDashboardPanel extends HTMLElement {
       "    sleep 30",
       "  done ) &",
       "BAT_PID=$!",
-      "# ── Prevent sleep while dashboard is running ─────────────────────────────",
-      "lipc-set-prop -i com.lab126.powerd preventScreenSaver 1",
+      ...(preventSleep !== false ? [
+        "# ── Prevent sleep while dashboard is running ─────────────────────────────",
+        "lipc-set-prop -i com.lab126.powerd preventScreenSaver 1",
+        "lipc-set-prop -i com.lab126.blanket disable 1",
+        "( while true; do",
+        "    lipc-set-prop -i com.lab126.powerd preventScreenSaver 1",
+        "    lipc-set-prop -i com.lab126.blanket disable 1",
+        "    sleep 60",
+        "  done ) &",
+        "SLEEP_PID=$!",
+      ] : []),
       "# ── Cleanup on exit: restore sleep and kill background jobs ──────────────",
-      "trap 'lipc-set-prop -i com.lab126.powerd preventScreenSaver 0; \\",
-      "      kill $BAT_PID $BAT_HTTP_PID 2>/dev/null' \\",
-      "     EXIT INT TERM",
+      ...(preventSleep !== false ? [
+        "trap 'lipc-set-prop -i com.lab126.powerd preventScreenSaver 0; \\",
+        "      lipc-set-prop -i com.lab126.blanket disable 0; \\",
+        "      kill $BAT_PID $BAT_HTTP_PID $SLEEP_PID 2>/dev/null' \\",
+        "     EXIT INT TERM",
+      ] : [
+        "trap 'kill $BAT_PID $BAT_HTTP_PID 2>/dev/null' \\",
+        "     EXIT INT TERM",
+      ]),
       "# ── HTTP server on port 2024: serves battery value to the dashboard ───────",
       "BAT_PORT=2024",
       "( while true; do",
@@ -554,23 +569,34 @@ class KindleDashboardPanel extends HTMLElement {
       : "";
   }
 
+  /* Normalise devices entry — supports old string format and new object format */
+  _normDevice(d) {
+    if (typeof d === "string") return { name: d, prevent_sleep: true };
+    return { name: d.name || "", prevent_sleep: d.prevent_sleep !== false };
+  }
+
   _renderDeviceList(root, cfg, baseUrl) {
-    const list    = root.querySelector("#device-list");
+    const list = root.querySelector("#device-list");
     if (!list) return;
-    const devices = cfg.devices || [];
+    const devices = (cfg.devices || []).map(d => this._normDevice(d));
     if (devices.length === 0) {
       list.innerHTML = `<p class="hint" style="margin:4px 0">No devices added yet. Click + Add Device to create a URL for each Kindle.</p>`;
       return;
     }
-    list.innerHTML = devices.map((name, i) => {
+    list.innerHTML = devices.map((dev, i) => {
       const devUrl = baseUrl
-        ? baseUrl + (name ? "&device=" + encodeURIComponent(name) : "")
+        ? baseUrl + (dev.name ? "&device=" + encodeURIComponent(dev.name) : "")
         : "";
-      const cfgSnippet = this._buildConfigSnippet(devUrl);
+      const cfgSnippet = this._buildConfigSnippet(devUrl, dev.prevent_sleep);
+      const chk = dev.prevent_sleep ? "checked" : "";
       return `
         <div class="device-row" data-idx="${i}">
           <input class="device-name-input" type="text"
-                 placeholder="e.g. bedroom-kindle" value="${this._esc(name)}">
+                 placeholder="e.g. bedroom-kindle" value="${this._esc(dev.name)}">
+          <label class="sleep-toggle" title="Prevent screensaver while dashboard is running">
+            <input type="checkbox" class="device-sleep-chk" ${chk}>
+            <span>Prevent sleep</span>
+          </label>
           <div class="kindle-url device-url">${this._esc(devUrl)}</div>
           <button class="btn-copy-device-url backup-btn"
                   data-url="${this._esc(devUrl)}" title="Copy URL">⎘ URL</button>
@@ -579,20 +605,24 @@ class KindleDashboardPanel extends HTMLElement {
           <button class="btn-remove-device" data-idx="${i}" title="Remove device">✕</button>
         </div>`;
     }).join("");
-    /* Re-wire device name inputs to update URLs live */
-    list.querySelectorAll(".device-name-input").forEach((el, i) => {
-      el.addEventListener("input", () => {
+    /* Re-wire inputs to update URLs and config snippets live */
+    list.querySelectorAll(".device-row").forEach((row, i) => {
+      const nameEl = row.querySelector(".device-name-input");
+      const sleepEl = row.querySelector(".device-sleep-chk");
+      const _update = () => {
         this._markDirty();
-        const name = el.value.trim();
-        const row  = el.closest(".device-row");
+        const name = nameEl.value.trim();
+        const preventSleep = sleepEl.checked;
         const devUrl = baseUrl
           ? baseUrl + (name ? "&device=" + encodeURIComponent(name) : "")
           : "";
-        row.querySelector(".device-url").textContent   = devUrl;
+        row.querySelector(".device-url").textContent = devUrl;
         row.querySelector(".btn-copy-device-url").dataset.url = devUrl;
-        const newCfg = this._buildConfigSnippet(devUrl);
-        row.querySelector(".btn-copy-device-cfg").dataset.cfg = newCfg;
-      });
+        row.querySelector(".btn-copy-device-cfg").dataset.cfg =
+          this._buildConfigSnippet(devUrl, preventSleep);
+      };
+      nameEl.addEventListener("input", _update);
+      sleepEl.addEventListener("change", _update);
     });
   }
 
@@ -675,7 +705,7 @@ class KindleDashboardPanel extends HTMLElement {
       }
       if (btn.id === "btn-add-device") {
         const cfg = this._collectConfig();
-        cfg.devices = [...(cfg.devices || []), ""];
+        cfg.devices = [...(cfg.devices || []), { name: "", prevent_sleep: true }];
         this._config = cfg; this._markDirty();
         const tokenUrl = this._buildTokenUrl(root, cfg);
         this._renderDeviceList(root, cfg, tokenUrl);
@@ -686,6 +716,7 @@ class KindleDashboardPanel extends HTMLElement {
       if (btn.classList.contains("btn-remove-device")) {
         const idx = parseInt(btn.dataset.idx, 10);
         const cfg = this._collectConfig();
+        cfg.devices = cfg.devices.map(d => this._normDevice(d));
         cfg.devices.splice(idx, 1);
         this._config = cfg; this._markDirty();
         const tokenUrl = this._buildTokenUrl(root, cfg);
@@ -752,8 +783,10 @@ class KindleDashboardPanel extends HTMLElement {
     cfg.dashboard_name   = root.querySelector("#dashboard-name")?.value.trim() || "Kindle Dashboard";
     cfg.location_name    = root.querySelector("#location-name")?.value.trim() || "Home";
     cfg.kindle_token = root.querySelector("#kindle-token")?.value.trim() || "";
-    cfg.devices = [...(root.querySelectorAll(".device-name-input") || [])]
-      .map(el => el.value.trim()).filter(Boolean);
+    cfg.devices = [...(root.querySelectorAll(".device-row") || [])].map(row => ({
+      name: (row.querySelector(".device-name-input")?.value.trim() || ""),
+      prevent_sleep: row.querySelector(".device-sleep-chk")?.checked !== false,
+    })).filter(d => d.name !== "" || true);  // keep all rows including unnamed
     cfg.font             = root.querySelector("#font-select")?.value           || "Georgia, serif";
     cfg.hard_refresh       = root.querySelector("#hard-refresh")?.checked      || false;
     cfg.refresh_interval   = parseInt(root.querySelector("#refresh-interval")?.value) || 60;
@@ -1125,7 +1158,7 @@ class KindleDashboardPanel extends HTMLElement {
     .kindle-url a{color:var(--primary-color,#03a9f4)}
     .device-list{display:flex;flex-direction:column;gap:6px;margin-top:4px}
     .device-row{display:grid;
-      grid-template-columns:180px 1fr auto auto 28px;
+      grid-template-columns:180px auto 1fr auto auto 28px;
       gap:6px;align-items:center}
     .device-url{font-family:monospace;font-size:11px;
       background:var(--secondary-background-color,#f5f5f5);
@@ -1137,6 +1170,9 @@ class KindleDashboardPanel extends HTMLElement {
       background:var(--primary-background-color,#fff);
       color:var(--primary-text-color);width:100%}
     .device-name-input:focus{outline:none;border-color:var(--primary-color,#03a9f4)}
+    .sleep-toggle{display:flex;align-items:center;gap:4px;font-size:12px;
+      color:var(--secondary-text-color,#666);white-space:nowrap;cursor:pointer}
+    .sleep-toggle input{cursor:pointer}
     .btn-remove-device{background:none;border:none;cursor:pointer;
       color:var(--error-color,#db4437);font-size:16px;padding:0;
       display:flex;align-items:center;justify-content:center}

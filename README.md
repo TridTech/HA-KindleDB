@@ -72,9 +72,10 @@ Paste a Long-Lived Access Token (from your HA profile → Long-Lived Access Toke
 
 **Devices table** — each row has:
 - **Device name** — a short identifier for this Kindle (e.g. `bedroom-kindle`). Used for per-device battery tracking and shown in the footer of the Kindle page. No spaces; use hyphens or underscores.
+- **Prevent sleep** — when checked (default), the generated config snippet includes the screensaver prevention commands. Uncheck for Kindles you want to sleep normally between uses.
 - **URL** — the full bookmark URL for this device, with the device name included. Clipped for display — use the copy buttons to get the full value.
 - **⎘ URL** — copies just the bookmark URL to the clipboard
-- **⎘ Config** — copies the complete `shortcut_browser.sh` config block for this device (see below), ready to paste
+- **⎘ Config** — copies the complete `shortcut_browser.sh` config block for this device (see below), ready to paste. The sleep prevention commands are included or omitted based on the Prevent sleep toggle.
 - **✕** — removes the device
 
 Click **+ Add Device** to add a new row. The URL and config snippet update live as you type the device name.
@@ -171,11 +172,21 @@ printf '%s' "$BAT" > "$BAT_FILE"
 BAT_PID=$!
 
 # ── Prevent sleep while dashboard is running ─────────────────────────────
+# preventScreenSaver alone is not sufficient on firmware 5.16.x+;
+# disabling the blanket screensaver framework is also required.
 lipc-set-prop -i com.lab126.powerd preventScreenSaver 1
+lipc-set-prop -i com.lab126.blanket disable 1
+( while true; do
+    lipc-set-prop -i com.lab126.powerd preventScreenSaver 1
+    lipc-set-prop -i com.lab126.blanket disable 1
+    sleep 60
+  done ) &
+SLEEP_PID=$!
 
 # ── Cleanup on exit: restore sleep and kill background jobs ──────────────
 trap 'lipc-set-prop -i com.lab126.powerd preventScreenSaver 0; \
-      kill $BAT_PID $BAT_HTTP_PID 2>/dev/null' \
+      lipc-set-prop -i com.lab126.blanket disable 0; \
+      kill $BAT_PID $BAT_HTTP_PID $SLEEP_PID 2>/dev/null' \
      EXIT INT TERM
 
 # ── HTTP server on port 2024: serves battery value to the dashboard ───────
