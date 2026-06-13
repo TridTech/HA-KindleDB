@@ -248,5 +248,6 @@ kindle_dashboard/
     └── frontend/
         ├── panel.js         # HA sidebar config panel (web component)
         ├── kindle.html      # Kindle page template
-        └── mdi-kindle.woff  # Subsetted Material Design Icons font (588 icons)
+        ├── mdi-kindle.woff  # Subsetted Material Design Icons font (588 icons)
+        └── MDI-LICENSE     # Apache 2.0 license for the MDI font
 ```

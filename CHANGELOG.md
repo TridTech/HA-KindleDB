@@ -59,6 +59,10 @@ All notable changes to Kindle Dashboard are documented here.
 - Battery bar interval correctly started after injected constants are defined
 - Device name in page footer when `?device=` URL parameter is set
 
+### Licensing
+- Added `MDI-LICENSE` file in `frontend/` attributing the Apache 2.0 licensed
+  Material Design Icons font used for the subsetted `mdi-kindle.woff`
+
 ### Compatibility
 - Requires Home Assistant 2024.1.0 or later
 - Config version 3 — automatic migration from v1 and v2
