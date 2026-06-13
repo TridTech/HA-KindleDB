@@ -37,7 +37,7 @@ A Home Assistant custom integration that serves a clean, e-ink–optimised dashb
 
 ## Installation via HACS
 
-1. In HACS → ⋮ → **Custom Repositories** → paste your GitHub repo URL → category: **Integration**
+1. In HACS → ⋮ → **Custom Repositories** → paste `https://github.com/TridTech/HA-KindleDashboard` → category: **Integration**
 2. Click **Add**, search for **Kindle Dashboard**, and install
 3. Restart Home Assistant
 

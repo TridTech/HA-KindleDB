@@ -1176,7 +1176,6 @@ class KindleDashboardPanel extends HTMLElement {
     .btn-remove-device{background:none;border:none;cursor:pointer;
       color:var(--error-color,#db4437);font-size:16px;padding:0;
       display:flex;align-items:center;justify-content:center}
-    .muted{color:var(--secondary-text-color,#999)}
     #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
       background:#323232;color:#fff;padding:10px 22px;border-radius:4px;
       font-size:13px;display:none;z-index:999;white-space:nowrap}

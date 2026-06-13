@@ -2,10 +2,10 @@
   "domain": "kindle_dashboard",
   "name": "Kindle Dashboard",
   "version": "1.4.0",
-  "documentation": "https://github.com/YOUR_USERNAME/kindle-dashboard",
-  "issue_tracker": "https://github.com/YOUR_USERNAME/kindle-dashboard/issues",
+  "documentation": "https://github.com/TridTech/HA-KindleDashboard",
+  "issue_tracker": "https://github.com/TridTech/HA-KindleDashboard/issues",
   "codeowners": [
-    "@YOUR_USERNAME"
+    "@TridTech"
   ],
   "requirements": [],
   "dependencies": [

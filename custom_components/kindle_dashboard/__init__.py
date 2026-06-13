@@ -162,6 +162,10 @@ def _merged_config(entry: ConfigEntry) -> dict:
         "value_bold":           DEFAULT_VALUE_BOLD,
         "value_italic":         DEFAULT_VALUE_ITALIC,
         "value_underline":      DEFAULT_VALUE_UNDERLINE,
+        # User-set fields — not in DEFAULT_* constants; fall back to empty
+        "kindle_token":         "",
+        "devices":              [],
+        "dashboard_name":       entry.title or "Kindle Dashboard",
     }
     base.update(entry.data)
     base.update(entry.options)
