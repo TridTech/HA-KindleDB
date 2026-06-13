@@ -517,9 +517,8 @@ function kbCheckReload() {
   xr.onerror = xr.ontimeout = function() { /* silent */ };
   xr.send();
 }
-/* kbTick() called after formatTime is defined — see boot section */
-if (_barVisible) setInterval(kbTick, 10000);
 setInterval(kbCheckReload, 5000);  /* check for power-button wake every 5s */
+/* kbTick interval started in boot block after _showBattery is assigned */
 </script>
 
 
@@ -540,6 +539,8 @@ if (_barVisible) {
 }
 if (_showClock)   document.getElementById("kb-time").style.display = "block";
 if (_showBattery) document.getElementById("kb-bat").style.display  = "block";
+/* Start kbTick interval now that _showBattery/_barVisible are correct */
+if (_barVisible) setInterval(kbTick, 10000);
 // Apply theme class to body
 document.body.className = (typeof THEME !== "undefined" && THEME) ? "theme-" + THEME : "theme-sharp";
 /* device label set at bottom of page */
